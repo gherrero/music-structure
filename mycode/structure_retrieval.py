@@ -3,14 +3,7 @@ import cProfile
 from sklearn import neighbors
 import os.path
 import struct_annotation as sa
-import structure_features as sf
 
-
-
-def loadSongNames(filename):
-	flist = open(filename,'r')
-	songList = flist.readlines()
-	return songList
 
 def querySong(query,tree):
 	index = tree.query(query,k=K,return_distance=False)
@@ -18,17 +11,10 @@ def querySong(query,tree):
 
 def unpickleAsArray(sf_pickle):
 	dataM = []
-	data = sf.getPickle(sf_pickle)
+	data = sa.getPickle(sf_pickle)
 	for row in data:
 		dataM.append(sa.convertToMatrix(row,50))
 	return dataM
-
-def getAnnotations(filename,K):
-	ann_list=[]
-	f=open(filename,'r')
-	for i, line in enumerate(f):
-		pass
-
 
 def getAnnotationList(results_list):
 	ann_list=[]
@@ -47,7 +33,7 @@ def getAnnotationList(results_list):
 def storeResults(list_fn,res_path):
 	f=open(list_fn,'r')
 	filelist=f.readlines()
-	train_set = sf.getPickle(sf_pickle,list_fn)
+	train_set = sa.getPickle(sf_pickle,list_fn)
 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2.0)
 
 	for i,line in enumerate(filelist):
@@ -80,7 +66,7 @@ def storeResults(list_fn,res_path):
 def printInfo(list_fn):
 	f=open(list_fn)
 	lines=f.readlines()
-	train_set = sf.getPickle(sf_pickle,list_fn)
+	train_set = sa.getPickle(sf_pickle,list_fn)
 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2.0)
 	for i, line in enumerate(lines):
 		fn=sf_path+line[:-4]+"csv"
@@ -116,7 +102,7 @@ if __name__ == "__main__":
 	# print "Structure Features length: %s" %len(sf_query)
 	# print "..."
 	# print "Unpickling files from %s ..." %sf_pickle
-	# data = sf.getPickle(sf_pickle,list_fn)
+	# data = sa.getPickle(sf_pickle,list_fn)
 	# tree = neighbors.KDTree(data,leaf_size=100,p=2.0)
 
 
