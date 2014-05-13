@@ -260,7 +260,7 @@ def print_overall(fF,F):
 	return True
 
 if __name__=="__main__":
-	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist('../../mycode/ann-beatlesTUT-n100.txt','../../mycode/annotation-results/beatlesTUT-n100/','../../metadata/beatles/mylabfilesTUT_tab/')
+	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist('../../mycode/annotation_results/ann-beatlesTUT-n100.txt','../../mycode/annotation_results/beatlesTUT-n100/','../../metadata/beatles/mylabfilesTUT_tab/')
 	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
 
 	f = csv.writer(open("results.csv", "a"))

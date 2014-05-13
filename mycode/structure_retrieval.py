@@ -2,7 +2,7 @@ import numpy as np
 import cProfile
 from sklearn import neighbors
 import os.path
-import struct_annotation as sa
+import structure_annotation as sa
 
 
 def querySong(query,tree):
@@ -81,12 +81,12 @@ def printInfo(list_fn):
 if __name__ == "__main__":
 
 	desc_path = '../hpcp_ah6_al5_csv/'
-	sf_pickle = 'sf-beatles-n100.pickle'
-	sf_path   = 'sf-beatles-n100/'
-	list_fn   = 'ann-beatlesTUT-n100.txt'
+	sf_pickle = 'pickles/sf-beatles-n100.pickle'
+	sf_path   = 'sfs/sf-beatles-n100/'
+	list_fn   = 'annotation_results/ann-beatlesTUT-n100.txt'
 	filename  = 'Chopin_Op024No3_Bacha-1998_pid9166e-09.mp3.csv'
 	ann_path  = '../metadata/beatles/mylabfilesTUT_tab/'
-	res_path  = 'annotation-results/beatlesTUT-n100/'
+	res_path  = 'annotation_results/beatlesTUT-n100/'
 	K = 3
 
 	songList = open(list_fn).readlines()
