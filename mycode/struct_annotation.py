@@ -157,7 +157,7 @@ def extractSF(hpcps):
 	R  = ssm(y, kappa)
 	L  = circShift(R)
 	P  = gaussianBlur(L, lhor, lver, std=0.4)
-	D  = downsample(P, 50)
+	D  = downsample(P, n)
 	sf = storeAsArray(D)
 	return sf
 

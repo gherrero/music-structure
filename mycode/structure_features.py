@@ -23,7 +23,7 @@ def storePickle(filename):
 	for i, line in enumerate(flist,start=1):
 		f = open(res_path+line[:-1],'r')
 		data = np.loadtxt(res_path + line[:-1], delimiter='\n')
-		print i
+		# print i
 		pickle.dump(data,pick)
 		f.close()
 	flist.close()
@@ -45,11 +45,11 @@ if __name__ == "__main__":
 	# COMENTADO PARA NO LIARLA AL EJECUTAR SIN QUERER
 
 	desc_path = '../hpcp_ah6_al5_csv/'
-	res_path  = 'sf-alldatasets/'
-	list_fn   = 'desc_list.txt'
-	pickle_fn = 'alldatasets.pickle'
+	res_path  = 'sf-beatles-n100/'
+	list_fn   = 'sf-beatles-n100.txt'
+	pickle_fn = 'sf-beatles-n100.pickle'
 
-	processFiles(list_fn)
+	# processFiles(list_fn)
 	storePickle(list_fn)
 	# data=getPickle(pickle_fn)
 
