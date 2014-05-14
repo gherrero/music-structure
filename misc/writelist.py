@@ -2,8 +2,8 @@ import os
 import csvio
 
 
-folder = os.listdir("../metadata/beatles/mylabfilesTUT_tab")
-filelist = open('ann-beatlesTUT-n100.txt','w')
+folder = os.listdir("../metadata/rwc/mylabfilesIRISA_tab")
+filelist = open('../annotation_results/ann-rwcIRISA-n100.txt','w')
 
 if __name__ == "__main__":
 

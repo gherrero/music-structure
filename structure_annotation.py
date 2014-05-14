@@ -143,6 +143,7 @@ def extractSF(hpcps):
 	P  = gaussianBlur(L, lhor, lver, std=0.4)
 	D  = downsample(P, n)
 	sf = storeAsArray(D)
+	# sf = normalize(sf)
 	return sf
 
 def downsample(x,n):
@@ -150,6 +151,10 @@ def downsample(x,n):
 	d = signal.resample(d.T,n)
 	return d.T
 
+def normalize(x):
+	z = (x-min(x))/(max(x)-min(x))
+	# z=[(i-min(x))/(max(x)-min(x)) for i in x]
+	return z
 
 #-------PLOTTING AND PRINTING-------#
 
@@ -212,16 +217,19 @@ def getPickle(pickle_fn,list_fn):
 	flist = open(list_fn,'r')
 	for i, line in enumerate(flist,start=0):
 		data.append(pickle.load(pick))
-		# print data
 	pick.close()
 	return data
 	
 
 if __name__ == "__main__":
 
-	desc_path = '../hpcp_ah6_al5_csv/'
-	res_path  = '../results'
-	desc_list = 'desc_list.txt'
-	filename  = 'Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv'
+	desc_path = 'hpcp_ah6_al5_csv/'
+	res_path  = 'sfs/alldatasets-n100/'
+	desc_list = 'sfs/alldatasets-n100.txt'
+	pickle_fn = 'alldatasets-n100.pickle'
 
+	filename  = 'Chopin_Op006No1_Cohen-1997_pid9105-01.mp3.csv'
+
+
+	# storePickle(desc_list)
 	printProcess(filename)

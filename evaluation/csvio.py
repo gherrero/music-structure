@@ -2,7 +2,7 @@ from numpy import *
 
 def load(filename,separator):
 	f=open(filename,'r')
-	print filename, separator
+	# print filename, separator
 	lines=f.readlines()
 	f.close()
 	fields=lines[1].split(separator)

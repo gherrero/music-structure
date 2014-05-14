@@ -19,7 +19,8 @@ def unpickleAsArray(sf_pickle):
 def getAnnotationList(results_list):
 	ann_list=[]
 	for res in results_list:
-		fn=ann_path+res[:-3]+"lab"
+		# print len(results_list)
+		fn=gt_path+res[:-3]+"lab"
 		if os.path.isfile(fn):
 			f=open(fn,'r')
 			lines=f.readlines()
@@ -28,12 +29,13 @@ def getAnnotationList(results_list):
 				ann.append(l[:-1].split('\t'))
 			ann_list.append(ann)
 			f.close()
+		else: print fn+" not found"
 	return ann_list
 
-def storeResults(list_fn,res_path):
+def storeResults(list_fn,cand_list,res_path):
 	f=open(list_fn,'r')
 	filelist=f.readlines()
-	train_set = sa.getPickle(sf_pickle,list_fn)
+	train_set = sa.getPickle(sf_pickle,cand_list)
 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2.0)
 
 	for i,line in enumerate(filelist):
@@ -45,7 +47,7 @@ def storeResults(list_fn,res_path):
 		if os.path.isfile(fn):
 			sf_query = np.loadtxt(fn)
 			songnumb = querySong(sf_query,tree).tolist()[0]
-			songs = [songList[i][:-1] for i in songnumb if not songList[i][:-1]==line[:-1]]
+			songs = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==line[:-4]]
 			# use duration information from query annotation file for now.
 			ann_query = getAnnotationList([line[:-1]])
 			duration_query = ann_query[0][-1][-2]
@@ -63,62 +65,36 @@ def storeResults(list_fn,res_path):
 			print fn+" not found"
 	f.close()
 
-def printInfo(list_fn):
+def printInfo(list_fn,cand_list):
 	f=open(list_fn)
 	lines=f.readlines()
-	train_set = sa.getPickle(sf_pickle,list_fn)
+	train_set = sa.getPickle(sf_pickle,cand_list)
 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2.0)
 	for i, line in enumerate(lines):
 		fn=sf_path+line[:-4]+"csv"
-		print "Query: "+line[:-1]
+		print "Query: "+line[:-5]
 		sf_query = np.loadtxt(fn)
 		songnumb = querySong(sf_query,tree).tolist()[0]
-		songs = [songList[i][:-1] for i in songnumb if not songList[i][:-1]==line[:-1]]
-		print "Result: "+songs[0]
+		songs = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==line[:-4]]
+		for song in songs: print "Result: "+song
 		print "\n"
 		ann_list = getAnnotationList(songs)
 
 if __name__ == "__main__":
 
-	desc_path = '../hpcp_ah6_al5_csv/'
-	sf_pickle = 'pickles/sf-beatles-n100.pickle'
-	sf_path   = 'sfs/sf-beatles-n100/'
-	list_fn   = 'annotation_results/ann-beatlesTUT-n100.txt'
 	filename  = 'Chopin_Op024No3_Bacha-1998_pid9166e-09.mp3.csv'
-	ann_path  = '../metadata/beatles/mylabfilesTUT_tab/'
-	res_path  = 'annotation_results/beatlesTUT-n100/'
-	K = 3
 
-	songList = open(list_fn).readlines()
+	desc_path  = 'hpcp_ah6_al5_csv/'
+	sf_pickle  = 'pickles/alldatasets-n100.pickle'
+	sf_path    = 'sfs/sf-alldatasets-n100/'
+	query_list = 'annotation_results/ann-rwcIRISA-n100.txt'
+	gt_path    = 'metadata/all/'
+	res_path   = 'annotation_results/rwcIRISA-n100/'
+	cand_list  = 'sfs/alldatasets-n100.txt'
+	K          = 3
 
-	# print "Querying file: %s ..." %filename
-	# print "-"*100+"\n"
-	# hpcps_query = np.loadtxt(desc_path + filename, delimiter=',')
+	songList = open(cand_list).readlines()
 
-	# print "HPCPS length: %s" %len(hpcps_query)
-	# print "Extracting structure features..."
-	# sf_query = sa.extractSF(hpcps_query)
-
-	# print "Structure Features length: %s" %len(sf_query)
-	# print "..."
-	# print "Unpickling files from %s ..." %sf_pickle
-	# data = sa.getPickle(sf_pickle,list_fn)
-	# tree = neighbors.KDTree(data,leaf_size=100,p=2.0)
-
-
-	# print "Total number of songs: %s" %len(data)
-	# songnumb = querySong(sf_query,tree).tolist()[0] # [0] because .tolist() returns a nested list
-	# songs = [songList[i][:-1] for i in songnumb if not songList[i][:-1]==filename] # removes query from results list
-
-	# print "\n"
-	# print "Query results:"
-	# print "--------------"
-	# for i, song in enumerate(songs): 
-	# 	print str(i+1)+"-"+"\t"+str(songnumb[i]+1)+":\t"+str(song) #prints the NUMBER on the list not the index
-	# print "\n"
-
-	# ann_list = getAnnotationList(songs)
-
-	storeResults(list_fn,res_path)
-	# printInfo(list_fn)
+	storeResults(query_list,cand_list,res_path)
+	# printInfo(query_list,cand_list)
 
