@@ -4,6 +4,7 @@ from sklearn import neighbors
 import os.path
 import structure_annotation as sa
 
+gt_path    = 'metadata/all/'
 
 def querySong(query,tree):
 	index = tree.query(query,k=K,return_distance=False)
@@ -56,8 +57,12 @@ def storeResults(list_fn,cand_list,res_path):
 
 			r=float(duration_query)/float(duration_result)
 			resFile=open(res_path+line[:-4]+'lab','w')
+			print ann_list
 			for elem in ann_list[0]:
-				elem = [float(el)*r for el in elem]  # this only works when labels are zeros, otherwise it messes everything up
+				label=elem[-1] 							 	# save the label so it's not modified
+				elem = [float(el)*r for el in elem[:-1]] 	# rescale the boundaries according to duration
+				elem.append(label) 						 	# append label again
+				print elem
 				lin = ''.join([str(elem[j])+'\t' for j in range(len(elem))])[:-1]+'\n'
 				resFile.writelines(lin)
 			resFile.close()
@@ -87,14 +92,14 @@ if __name__ == "__main__":
 	desc_path  = 'hpcp_ah6_al5_csv/'
 	sf_pickle  = 'pickles/alldatasets-n100.pickle'
 	sf_path    = 'sfs/sf-alldatasets-n100/'
-	query_list = 'annotation_results/ann-rwcIRISA-n100.txt'
 	gt_path    = 'metadata/all/'
+	query_list = 'annotation_results/ann-beatlesQMUL-n100.txt'
 	res_path   = 'annotation_results/rwcIRISA-n100/'
 	cand_list  = 'sfs/alldatasets-n100.txt'
-	K          = 3
+	K          = 5
 
 	songList = open(cand_list).readlines()
 
-	storeResults(query_list,cand_list,res_path)
-	# printInfo(query_list,cand_list)
+	# storeResults(query_list,cand_list,res_path)
+	printInfo(query_list,cand_list)
 
