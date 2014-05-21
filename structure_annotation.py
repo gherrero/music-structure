@@ -168,6 +168,7 @@ def printProcess(filename):
 	y = delayCoord(hpcps, m, tau) # apply delay coordinates
 	R = ssm(y,kappa)
 	plt.imshow(R,cmap = cm.binary,interpolation='nearest')
+	plt.title(filename)
 	plt.figure()
 	L = circShift(R)
 	plt.subplot(211)
@@ -183,6 +184,7 @@ def printProcess(filename):
 	arr = storeAsArray(D)
 	unpacked = convertToMatrix(arr,n)
 	plt.imshow(unpacked,cmap = cm.binary,interpolation='nearest',aspect='auto')
+	plt.title(filename)
 	plt.show()
 
 
@@ -228,7 +230,7 @@ if __name__ == "__main__":
 	desc_list = 'sfs/alldatasets-n100.txt'
 	pickle_fn = 'alldatasets-n100.pickle'
 
-	filename  = 'Chopin_Op006No1_Cohen-1997_pid9105-01.mp3.csv'
+	filename  = 'RM-P033.wav.csv'
 
 
 	# storePickle(desc_list)

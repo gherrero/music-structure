@@ -42,9 +42,10 @@ def labels_filelist(filenameList,pathResults,pathGroundTruth):
 	Fmeasure=[]
 	OverSeg=[]
 	UnderSeg=[]
-	for line in lines:
+	for i,line in enumerate(lines):
+		print i
 		fields=line[0:len(line)-1].split('/')
-		P,R,F,So,Su=labels_singlefile(pathResults+fields[len(fields)-1]+'.lab',pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
+		P,R,F,So,Su=labels_singlefile(pathResults+fields[len(fields)-1],pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
 		Precision.append(P)
 		Recall.append(R)
 		Fmeasure.append(F)
@@ -260,7 +261,12 @@ def print_overall(fF,F):
 	return True
 
 if __name__=="__main__":
-	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist('../annotation_results/ann-rwcIRISA-n100.txt','../annotation_results/rwcIRISA-n100/','../metadata/rwc/mylabfilesIRISA_tab/')
+
+	filenameList    = '../annotation_results/ann-chopin.txt'
+	pathResults     = '../annotation_results/chopin-n100/'
+	pathGroundTruth = '../metadata/mazurkas/mylabfilesMPI_tab/'
+
+	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
 	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
 
 	f = csv.writer(open("results.csv", "a"))
@@ -268,5 +274,6 @@ if __name__=="__main__":
 	f.writerow([time.strftime("%H:%M %d/%m"),"Threshold","Precision","Recall","F-Score"])
 	f.writerow(["",THRESHOLD_FINE, "%.3f"%mean(fP) +" (" +"%.3f"%std(fP)+")", "%.3f"%mean(fR) +" (" +"%.3f"%std(fR)+")", "%.3f"%mean(fF) +" (" +"%.3f"%std(fF)+")"])
 	f.writerow(["",THRESHOLD_COARSE, "%.3f"%mean(cP) +" (" +"%.3f"%std(cP)+")", "%.3f"%mean(cR) +" (" +"%.3f"%std(cR)+")", "%.3f"%mean(cF) +" (" +"%.3f"%std(cF)+")"])
-	# f.writerow(["","test","","",""])
 
+	P,R,F,So,Su=labels_filelist(filenameList,pathResults,pathGroundTruth)
+	print_labels(P,R,F,So,Su)

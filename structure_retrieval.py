@@ -51,18 +51,20 @@ def storeResults(list_fn,cand_list,res_path):
 			songs = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==line[:-4]]
 			# use duration information from query annotation file for now.
 			ann_query = getAnnotationList([line[:-1]])
+			# print line
+			# print ann_query
 			duration_query = ann_query[0][-1][-2]
+
 			ann_list = getAnnotationList(songs)
+			# print ann_list[0]
 			duration_result=ann_list[0][-1][-2]
 
 			r=float(duration_query)/float(duration_result)
 			resFile=open(res_path+line[:-4]+'lab','w')
-			print ann_list
 			for elem in ann_list[0]:
 				label=elem[-1] 							 	# save the label so it's not modified
 				elem = [float(el)*r for el in elem[:-1]] 	# rescale the boundaries according to duration
 				elem.append(label) 						 	# append label again
-				print elem
 				lin = ''.join([str(elem[j])+'\t' for j in range(len(elem))])[:-1]+'\n'
 				resFile.writelines(lin)
 			resFile.close()
@@ -85,18 +87,19 @@ def printInfo(list_fn,cand_list):
 		print "\n"
 		ann_list = getAnnotationList(songs)
 
+
 if __name__ == "__main__":
 
-	filename  = 'Chopin_Op024No3_Bacha-1998_pid9166e-09.mp3.csv'
-
 	desc_path  = 'hpcp_ah6_al5_csv/'
-	sf_pickle  = 'pickles/alldatasets-n100.pickle'
-	sf_path    = 'sfs/sf-alldatasets-n100/'
 	gt_path    = 'metadata/all/'
-	query_list = 'annotation_results/ann-beatlesQMUL-n100.txt'
-	res_path   = 'annotation_results/rwcIRISA-n100/'
-	cand_list  = 'sfs/alldatasets-n100.txt'
-	K          = 5
+	sf_path    = 'sfs/sf-alldatasets-n100/'
+
+	sf_pickle  = 'pickles/sf-alldatasets-n100.pickle' #the one that includes the candidate list
+	query_list = 'annotation_results/ann-chopin.txt'
+	cand_list  = 'annotation_results/ann-alldatasets.txt'
+	res_path   = 'annotation_results/chopin-n100/'
+
+	K          = 10
 
 	songList = open(cand_list).readlines()
 
