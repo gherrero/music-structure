@@ -11,8 +11,6 @@ gt_path         = 'metadata/all/'
 desc_path       = 'hpcp_ah6_al5_csv/'
 res_path        = 'annotation_results/beatlesQMUL-n100/'
 
-filename_list   = ['Chopin_Op006No1_Rangell-2001_pid9094-01.mp3.lab','Chopin_Op006No1_Ashkenazy-1981_pid9058-01.mp3.lab','Chopin_Op006No1_Luisada-1990_pid9055-01.mp3.lab']
-filename_list   = ['Chopin_Op006No1_Rangell-2001_pid9094-01.mp3.lab']
 
 font = {'family' : 'serif',
         'color'  : 'darkred',
@@ -72,6 +70,54 @@ def gaussians(query_fn):
 	plt.show()
 	
 
+def addGaussians(query_fn):
+	songs_list = sr.getNeighbors(query_fn)
+	M          = 20000
+	delta      = 1000
+	g          = signal.gaussian(M,std=delta)
+	length     = 0
+	lengths    = []
+	# this next line is impossible to read. change in the near future
+	query_ann    = np.floor((np.array(getAnnotation(sr.getAnnotationList(gt_path,[query_fn])))*1000)).astype(int)
+	query_dur  = query_ann[-1]
+	print query_dur
+	for song in songs_list:
+		gt_list    = sr.getAnnotationList(gt_path,[song])
+		ann        = getAnnotation(gt_list)
+		ann        = np.floor((np.array(ann)*1000)).astype(int)
+		lengths.append(ann[-1])
+	length=query_dur
+	total=np.zeros(int(np.ceil(length)))
+
+	for i, song in enumerate(songs_list):
+		print song
+		gt_list = sr.getAnnotationList(gt_path,[song])
+		ann     = getAnnotation(gt_list)
+		ann     = np.floor((np.array(ann)*1000)).astype(int) #convert to miliseconds to mantain res
+		neighbor_dur = ann[-1]
+		ann=ann[1:-1]
+		a=np.zeros(int(np.ceil(length)))
+		r=float(query_dur)/float(neighbor_dur) #rescale according to query duration
+		ann=np.floor(ann*r)
+
+		for loc in ann:
+			if loc < np.floor(M/2):
+				a+=np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
+			elif loc + np.floor(M/2) > length:
+				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
+			else:
+				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
+		total+=a
+		plt.subplot(len(songs_list)+1,1,i+1)
+		plt.vlines(ann,0,1,colors='r')
+		plt.plot(a)
+		plt.xlim([0,length])
+	plt.subplot(len(songs_list)+1,1,len(songs_list)+1)
+	plt.plot(total)
+	plt.vlines(query_ann,0,1,'g',linewidths=3)
+	plt.xlim([0,length])
+	plt.show()
+
 def getAnnotation(ann_list):
 	new=[0.0]
 	for line in ann_list[0]:
@@ -124,7 +170,6 @@ def process(query_fn):
 	ax6.vlines(gt, 0, 1, colors='k', linestyles='solid', label='')
 
 	# ax7 = plt.subplot2grid((8,4), (5, 2),rowspan=2, colspan=2)
-	# ax7.tick_params(axis='both',which='both',right='off',left='off',top='off',labelleft='off',bottom='off',labelbottom='off')
 	# ax7.text(0.1,0.8,'Query and results information',fontsize=15,fontweight='bold')
 
 	plt.tight_layout()
@@ -136,5 +181,6 @@ if __name__ == "__main__":
 	# process('Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv')
 	# print getAnnotation(ann_list)
 	# annotations(ann_list)
-	gaussians('Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv')
+	# gaussians('Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv')
+	addGaussians('Chopin_Op006No1_Magin-1975_pid9138-01.mp3.csv')
 

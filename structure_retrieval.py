@@ -9,7 +9,7 @@ cand_list = 'annotation_results/alldatasets.txt'
 sf_pickle = 'pickles/sf-alldatasets-n100.pickle'
 desc_path = 'hpcp_ah6_al5_csv/'
 sf_path   = 'sfs/sf-alldatasets-n100/'
-K         = 10
+K         = 5
 
 songList = open(cand_list).readlines()
 
@@ -20,9 +20,9 @@ def querySong(query,tree):
 def getNeighbors(query_fn):
 	sf_query = np.loadtxt(sf_path+query_fn)
 	train_set = sa.getPickle(sf_pickle,cand_list)
-	tree = neighbors.KDTree(train_set,leaf_size=100,metric='minkowski',p=3)
+	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
 	songnumb = querySong(sf_query,tree).tolist()[0]
-	neighbors_fn_list = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==query_fn[:-4]]
+	neighbors_fn_list = [songList[i][:-1] for i in songnumb if not songList[i][:-5]==query_fn[:-4]]
 	return neighbors_fn_list
 
 def unpickleAsArray(sf_pickle):
@@ -52,7 +52,7 @@ def storeResults(list_fn,cand_list,res_path):
 	f=open(list_fn,'r')
 	filelist=f.readlines()
 	train_set = sa.getPickle(sf_pickle,cand_list)
-	tree = neighbors.KDTree(train_set,leaf_size=100,metric='minkowski',p=3)
+	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
 
 	for i,line in enumerate(filelist):
 		if i%50==0: print i
@@ -125,13 +125,13 @@ if __name__ == "__main__":
 	#	Case 5: rwcP vs rwcP
 	#	Case 6: rwcP vs all
 	
-	# (sf_pickle, query_list,	cand_list, res_path) = listSelection(2)
+	(sf_pickle, query_list,	cand_list, res_path) = listSelection(4)
 	# songList = open(cand_list).readlines()
 
 	# storeResults(query_list,cand_list,res_path)
-	# printInfo(query_list,cand_list)
-	n = getNeighbors('Chopin_Op006No1_Ashkenazy-1981_pid9058-01.mp3.csv')
-	print n
-	print len(n)
+	printInfo(query_list,cand_list)
+	# n = getNeighbors('Chopin_Op006No1_Ashkenazy-1981_pid9058-01.mp3.csv')
+	# print n
+	# print len(n)
 
 
