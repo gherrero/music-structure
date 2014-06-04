@@ -262,9 +262,9 @@ def print_overall(fF,F):
 
 if __name__=="__main__":
 
-	filenameList    = '../annotation_results/ann-rwcIRISA.txt'
-	pathResults     = '../annotation_results/rwcAIST-n100/'
-	pathGroundTruth = '../metadata/rwc/mylabfilesAIST_tab/'
+	filenameList    = '../annotation_results/beatlesQMUL.txt'
+	pathResults     = '../annotation_results/beatlesQMUL-n100/'
+	pathGroundTruth = '../metadata/beatles/mylabfilesQMUL_tab/'
 
 	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
 	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)

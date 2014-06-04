@@ -4,11 +4,26 @@ from sklearn import neighbors
 import os.path
 import structure_annotation as sa
 
-gt_path    = 'metadata/all/'
+gt_path   = 'metadata/all/'
+cand_list = 'annotation_results/alldatasets.txt'
+sf_pickle = 'pickles/sf-alldatasets-n100.pickle'
+desc_path = 'hpcp_ah6_al5_csv/'
+sf_path   = 'sfs/sf-alldatasets-n100/'
+K         = 10
+
+songList = open(cand_list).readlines()
 
 def querySong(query,tree):
 	index = tree.query(query,k=K,return_distance=False)
 	return index
+
+def getNeighbors(query_fn):
+	sf_query = np.loadtxt(sf_path+query_fn)
+	train_set = sa.getPickle(sf_pickle,cand_list)
+	tree = neighbors.KDTree(train_set,leaf_size=100,metric='minkowski',p=3)
+	songnumb = querySong(sf_query,tree).tolist()[0]
+	neighbors_fn_list = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==query_fn[:-4]]
+	return neighbors_fn_list
 
 def unpickleAsArray(sf_pickle):
 	dataM = []
@@ -17,11 +32,11 @@ def unpickleAsArray(sf_pickle):
 		dataM.append(sa.convertToMatrix(row,50))
 	return dataM
 
-def getAnnotationList(results_list):
+def getAnnotationList(path,results_list):
 	ann_list=[]
 	for res in results_list:
 		# print len(results_list)
-		fn=gt_path+res[:-3]+"lab"
+		fn=path+res[:-3]+"lab"
 		if os.path.isfile(fn):
 			f=open(fn,'r')
 			lines=f.readlines()
@@ -37,7 +52,7 @@ def storeResults(list_fn,cand_list,res_path):
 	f=open(list_fn,'r')
 	filelist=f.readlines()
 	train_set = sa.getPickle(sf_pickle,cand_list)
-	tree = neighbors.KDTree(train_set,leaf_size=100,p=2.0)
+	tree = neighbors.KDTree(train_set,leaf_size=100,metric='minkowski',p=3)
 
 	for i,line in enumerate(filelist):
 		if i%50==0: print i
@@ -50,12 +65,10 @@ def storeResults(list_fn,cand_list,res_path):
 			songnumb = querySong(sf_query,tree).tolist()[0]
 			songs = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==line[:-4]]
 			# use duration information from query annotation file for now.
-			ann_query = getAnnotationList([line[:-1]])
-			# print line
-			# print ann_query
+			ann_query = getAnnotationList(gt_path,[line[:-1]])
 			duration_query = ann_query[0][-1][-2]
 
-			ann_list = getAnnotationList(songs)
+			ann_list = getAnnotationList(gt_path,songs)
 			# print ann_list[0]
 			duration_result=ann_list[0][-1][-2]
 
@@ -85,8 +98,19 @@ def printInfo(list_fn,cand_list):
 		songs = [songList[i][:-1] for i in songnumb if not songList[i][:-4]==line[:-4]]
 		for song in songs: print "Result: "+song
 		print "\n"
-		ann_list = getAnnotationList(songs)
+		ann_list = getAnnotationList(gt_path,songs)
 
+def listSelection(case):
+
+	return {
+		# (pickle, query, cand, results)
+		1: ('pickles/sf-beatles-n100.pickle','annotation_results/beatlesQMUL.txt','annotation_results/beatlesQMUL.txt','annotation_results/beatlesQMUL-n100/'),
+		2: ('pickles/sf-alldatasets-n100.pickle','annotation_results/beatlesQMUL.txt','annotation_results/alldatasets.txt','annotation_results/beatlesQMUL-n100/'),
+		3: ('pickles/sf-chopin-n100.pickle','annotation_results/chopin.txt','annotation_results/chopin.txt','annotation_results/chopin-n100/'),
+		4: ('pickles/sf-alldatasets-n100.pickle','annotation_results/chopin.txt','annotation_results/alldatasets.txt','annotation_results/chopin-n100/'),
+		5: ('pickles/sf-rwcP-n100.pickle','annotation_results/rwcP.txt','annotation_results/rwcP.txt','annotation_results/rwcAIST-n100/'),
+		6: ('pickles/sf-alldatasets-n100.pickle','annotation_results/rwcP.txt','annotation_results/alldatasets.txt','annotation_results/rwcAIST-n100/'),
+	}[case]
 
 if __name__ == "__main__":
 
@@ -94,15 +118,20 @@ if __name__ == "__main__":
 	gt_path    = 'metadata/all/'
 	sf_path    = 'sfs/sf-alldatasets-n100/'
 
-	sf_pickle  = 'pickles/sf-alldatasets-n100.pickle' #the one that includes the candidate list
-	query_list = 'annotation_results/ann-chopin.txt'
-	cand_list  = 'annotation_results/ann-alldatasets.txt'
-	res_path   = 'annotation_results/chopin-n100/'
-
-	K          = 10
-
-	songList = open(cand_list).readlines()
+	#	Case 1: beatlesQMUL vs beatlesQMUl
+	#	Case 2: beatlesQMUL vs all
+	#	Case 3: mazurkas vs mazurkas
+	#	Case 4: mazurkas vs all
+	#	Case 5: rwcP vs rwcP
+	#	Case 6: rwcP vs all
+	
+	# (sf_pickle, query_list,	cand_list, res_path) = listSelection(2)
+	# songList = open(cand_list).readlines()
 
 	# storeResults(query_list,cand_list,res_path)
-	printInfo(query_list,cand_list)
+	# printInfo(query_list,cand_list)
+	n = getNeighbors('Chopin_Op006No1_Ashkenazy-1981_pid9058-01.mp3.csv')
+	print n
+	print len(n)
+
 

@@ -13,17 +13,17 @@ import pickle
 
 #-------------PARAMETERS-----------------#
 
-hop_size        = 0.1393
-min_len         = 3
-m               = 22
-kappa           = 0.03
-lver            = 215
-lhor            = 2
-sigmaFactor     = 1
-tau             = 1
-delta           = 0.05		
-n               = 100
-
+hop_size    = 0.1393
+min_len     = 3
+m           = 22
+kappa       = 0.03
+lver        = 215
+lhor        = 2
+sigmaFactor = 1
+tau         = 1
+delta       = 0.05		
+n           = 100
+std         = 0.4
 
 np.set_printoptions(threshold=np.nan)
 
@@ -45,7 +45,7 @@ def do_cprofile(func):
 
 #------STRUCTURE FEATURES EXTRACTION--------#
 
-def delayCoord(x,m,tau):
+def delayCoord(x):
 	y = np.zeros((x.shape[0]-(m-1)*tau,x.shape[1]*m))
 	for j in range(0,m):
 		posj = j*x.shape[1]
@@ -53,7 +53,7 @@ def delayCoord(x,m,tau):
 		y[:,posj:posj+x.shape[1]] = x[posi:posi+y.shape[0],:]
 	return y
 
-def ssm(X,kappa):
+def ssm(X):
 	K = int(kappa*X.shape[0])
 	# print "K = "+str(K)
 	R = np.zeros([X.shape[0],X.shape[0]])
@@ -76,7 +76,7 @@ def circShift(x):
 		y[i] = x
 	return y.T
 
-def gausWin(size,std):
+def gausWin(size):
 
 	y = np.zeros(size)
 	N = float((size-1))/float(2)
@@ -85,10 +85,10 @@ def gausWin(size,std):
 		y[i] = np.exp(-0.5*aux*aux)
 	return y
 
-def gaussianBlur(x,lhor,lver,std):
+def gaussianBlur(x):
 	if lver>=1: 
 		size = min(lver,min(x.shape[0],x.shape[1])-1);
-		w = gausWin(size,std)
+		w = gausWin(size)
 		y = np.zeros((x.shape))
 		# print "Gaussian window length: "+str(size)
 		for i, row in enumerate(x):
@@ -96,7 +96,7 @@ def gaussianBlur(x,lhor,lver,std):
 	y = y.T.copy()
 	if lhor>=1:
 		size = min(lhor,min(x.shape[0],x.shape[1])-1);
-		w = gausWin(size,std)
+		w = gausWin(size)
 		# print "Gaussian window shape: " +str(w.shape)
 		for i, col in enumerate(y):
 			y[i] = np.convolve(col,w,mode='same')
@@ -136,25 +136,28 @@ def convertToMatrix(x,n): # This copies the info of the left of the diagonal int
 	y = y+y2
 	return y
 
-def extractSF(hpcps):
-	y  = delayCoord(hpcps, m, tau)
-	R  = ssm(y, kappa)
-	L  = circShift(R)
-	P  = gaussianBlur(L, lhor, lver, std=0.4)
-	D  = downsample(P, n)
-	sf = storeAsArray(D)
-	# sf = normalize(sf)
-	return sf
-
-def downsample(x,n):
+def downsample(x):
 	d = signal.resample(x,n)
 	d = signal.resample(d.T,n)
 	return d.T
 
-def normalize(x):
-	z = (x-min(x))/(max(x)-min(x))
-	# z=[(i-min(x))/(max(x)-min(x)) for i in x]
-	return z
+def novelty(x):
+	c=[]
+	for i in np.arange(len(x))-1:
+		# print x[i]
+		c.append(np.sqrt(sum(x[i]-x[i+1])**2))
+	c=(c-min(c))/max(c)
+	return c
+
+def extractSF(hpcps):
+	y  = delayCoord(hpcps, m, tau)
+	R  = ssm(y)
+	L  = circShift(R)
+	P  = gaussianBlur(L)
+	D  = downsample(P)
+	sf = storeAsArray(D)
+	# sf = normalize(sf)
+	return sf	
 
 #-------PLOTTING AND PRINTING-------#
 
@@ -165,25 +168,28 @@ def printProcess(filename):
 	hpcps = np.loadtxt(desc_path + filename, delimiter=',') # read descriptors
 	plt.imshow(hpcps.T,interpolation='nearest',aspect='auto')
 	plt.figure()
-	y = delayCoord(hpcps, m, tau) # apply delay coordinates
-	R = ssm(y,kappa)
+	y = delayCoord(hpcps) # apply delay coordinates
+	R = ssm(y)
 	plt.imshow(R,cmap = cm.binary,interpolation='nearest')
 	plt.title(filename)
 	plt.figure()
 	L = circShift(R)
 	plt.subplot(211)
 	plt.imshow(L,cmap = cm.binary,interpolation='nearest',aspect='auto')
-	P = gaussianBlur(L,lhor,lver,std=0.4)
+	P = gaussianBlur(L)
 	plt.subplot(212)
 	plt.imshow(P,cmap = cm.binary,interpolation='nearest',aspect='auto')
 	plt.figure()
 	print "P shape: " + str(P.shape)
-	D = downsample(P,n)
+	D = downsample(P)
 	plt.imshow(D,cmap = cm.binary,interpolation='nearest',aspect='auto')
 	plt.figure()
 	arr = storeAsArray(D)
 	unpacked = convertToMatrix(arr,n)
 	plt.imshow(unpacked,cmap = cm.binary,interpolation='nearest',aspect='auto')
+	plt.figure('novelty')
+	C = novelty(P)
+	plt.plot(C)
 	plt.title(filename)
 	plt.show()
 
@@ -230,7 +236,7 @@ if __name__ == "__main__":
 	desc_list = 'sfs/alldatasets-n100.txt'
 	pickle_fn = 'alldatasets-n100.pickle'
 
-	filename  = 'RM-P033.wav.csv'
+	filename  = 'Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv'
 
 
 	# storePickle(desc_list)
