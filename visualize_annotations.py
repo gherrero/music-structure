@@ -3,20 +3,36 @@ import matplotlib.pyplot as plt
 import structure_retrieval as sr
 import structure_annotation as sa
 import matplotlib.cm as cm
+from matplotlib.patches import Rectangle
 from scipy import signal
+import peakdetect
+from sklearn import neighbors
 
-'''receives a list of annotations an plots them'''
 
-gt_path         = 'metadata/all/'
-desc_path       = 'hpcp_ah6_al5_csv/'
-res_path        = 'annotation_results/beatlesQMUL-n100/'
+'''visualization stuff'''
 
+gt_path   = 'metadata/all/'
+desc_path = 'hpcp_ah6_al5_csv/'
+cand_list = 'annotation_results/alldatasets.txt'
+sf_pickle = 'pickles/sf-alldatasets-n100.pickle'
+
+res_path  = 'annotation_results/beatlesQMUL-n100/'
 
 font = {'family' : 'serif',
         'color'  : 'darkred',
         'weight' : 'normal',
         'size'   : 11,
         }
+
+label_color =  {'0.0' : '#D8D8D8', #grey 
+				'1.0' : '#7FC37F', #green 
+				'2.0' : '#DCE27F', #yellow 
+				'3.0' : '#9F7FFF', #blue
+				'4.0' : '#FF9AF7', #magenta
+				'5.0' : '#C1A883', #red
+				'6.0' : '#B2EDEC', #cyan
+				'7.0' : '#C6782C', #orange
+				}
 
 def annotations(annotations_list):
 	newall = []
@@ -43,86 +59,99 @@ def annotations(annotations_list):
 		p.set_xticklabels(xinterval,fontsize=10)
 		plt.axis([0,m,0,1])
 	fig.text(0.5, 0.04, 'time (s)', ha='center', va='center')
-	# plt.tight_layout()
 	plt.show()
- 
-def gaussians(query_fn):
-	gt_list = sr.getAnnotationList(gt_path,[query_fn])
-	ann     = getAnnotation(gt_list)
-	
-	ann    = np.floor((np.array(ann)*1000)).astype(int) #convert to miliseconds to mantain res
-	length = np.ceil(ann[-1])
-	M      = 10000 #must be even
-
-	ann=ann[1:-1]
-	g = signal.gaussian(M,std=1000)
-	a=np.zeros(int(np.ceil(length)))
-
-	for loc in ann:
-		if loc < np.floor(M/2):
-			a+=np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
-		elif loc + np.floor(M/2) > length:
-			a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
-		else:
-			a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
-	plt.vlines(ann,0,1,colors='r')
-	plt.plot(a)
-	plt.show()
-	
-
+ 	
 def addGaussians(query_fn):
-	songs_list = sr.getNeighbors(query_fn)
-	M          = 20000
-	delta      = 1000
-	g          = signal.gaussian(M,std=delta)
-	length     = 0
-	lengths    = []
-	# this next line is impossible to read. change in the near future
-	query_ann    = np.floor((np.array(getAnnotation(sr.getAnnotationList(gt_path,[query_fn])))*1000)).astype(int)
-	query_dur  = query_ann[-1]
-	print query_dur
-	for song in songs_list:
-		gt_list    = sr.getAnnotationList(gt_path,[song])
-		ann        = getAnnotation(gt_list)
-		ann        = np.floor((np.array(ann)*1000)).astype(int)
-		lengths.append(ann[-1])
-	length=query_dur
-	total=np.zeros(int(np.ceil(length)))
+	train_set = sa.getPickle(sf_pickle,cand_list)
+	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
 
+	songs_list   = sr.getNeighbors(query_fn,tree)
+	M            = 9000
+	sigma        = 1500
+	g            = signal.gaussian(M,std=sigma)
+	query_ann    = sr.getAnnotationList(gt_path,[query_fn])
+	query_labels = [elem[-1] for elem in query_ann[0]]
+	query_ann    = np.floor((np.array(sr.getAnnotation(query_ann))*1000)).astype(int)
+	length       = query_ann[-1]
+	total        = np.zeros(int(np.ceil(length)))
+	
+	neighbors_annotations = sr.getAnnotationList(gt_path,songs_list)
+	neighbors_annotations_rescaled = []
+	train_set = sa.getPickle(sf_pickle,cand_list)
+	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
+	fig = plt.figure()
 	for i, song in enumerate(songs_list):
 		print song
 		gt_list = sr.getAnnotationList(gt_path,[song])
-		ann     = getAnnotation(gt_list)
-		ann     = np.floor((np.array(ann)*1000)).astype(int) #convert to miliseconds to mantain res
-		neighbor_dur = ann[-1]
-		ann=ann[1:-1]
-		a=np.zeros(int(np.ceil(length)))
-		r=float(query_dur)/float(neighbor_dur) #rescale according to query duration
-		ann=np.floor(ann*r)
+		ann = np.floor((np.array(sr.getAnnotation(gt_list))*1000)).astype(int) #convert to miliseconds to mantain res
+ 		neighbor_dur = ann[-1]
+ 		ann_with_sides = ann
+		ann = ann[1:-1] #exclude starting and ending points
+		a = np.zeros(int(np.ceil(length)))
+		r = float(length)/float(neighbor_dur) #rescale according to query duration
+		ann = np.floor(ann*r)
 
-		for loc in ann:
+		ann_with_sides = np.floor(ann_with_sides*r) 
+		labels=[x[-1] for x in gt_list[0]] # get the labels
+		ax = fig.add_subplot(len(songs_list)+2,1,i+1)
+		annotation_rescaled=[]
+		for elem in neighbors_annotations[i]:
+			label=elem[-1] #save the label so it doesnt get affected by rescaling
+			elem[0]=int(np.floor(float(elem[0])*1000*r)) #rescale the rest
+			elem[1]=int(np.floor(float(elem[1])*1000*r))
+			annotation_rescaled.append([elem[0],elem[1],label])
+		neighbors_annotations_rescaled.append(annotation_rescaled)
+		
+		for i, loc in enumerate(ann,start=1):
+			currentaxis=plt.gca()
+			ax.add_patch(Rectangle((ann_with_sides[i-1], 0), ann_with_sides[i]-ann_with_sides[i-1], 2, facecolor=label_color[labels[i-1]], alpha=1))
+			ax.add_patch(Rectangle((ann_with_sides[-2], 0), ann_with_sides[-1]-ann_with_sides[-2], 2, facecolor=label_color[labels[-1]], alpha=1))
 			if loc < np.floor(M/2):
-				a+=np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
+				a += np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
 			elif loc + np.floor(M/2) > length:
-				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
+				a += np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
 			else:
-				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
-		total+=a
-		plt.subplot(len(songs_list)+1,1,i+1)
+				a += np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
+
+		total += a
 		plt.vlines(ann,0,1,colors='r')
-		plt.plot(a)
+		plt.plot(a,color='k')
 		plt.xlim([0,length])
-	plt.subplot(len(songs_list)+1,1,len(songs_list)+1)
+	total=total/float(max(total))
+	ax = fig.add_subplot(len(songs_list)+2,1,len(songs_list)+1)
 	plt.plot(total)
+	plt.xlim([0,length])
+	plt.ylim([0,1])
+	peaks = sr.getPeaks(total,neighbors_annotations)
+	print "peaks"
+	print peaks
+	all_songs_segmented = [sr.segmentLabel(elem) for elem in neighbors_annotations_rescaled]
+	res_boundaries=sorted(peaks)
+	res_boundaries.insert(0,0)
+	res_boundaries.append(length) #cause all songs are supposed to be the same length now
+	res_labels = sr.mergeLabels(res_boundaries,all_songs_segmented)
+	# print res_boundaries
+	# print "-"*10
+	# print res_labels
+	# print "_"*10
+
+	print sr.formatAnnotation(res_boundaries,res_labels)
+	for i in np.arange(len(res_labels)):
+		ax.add_patch(Rectangle((res_boundaries[i], 0),res_boundaries[i+1]-res_boundaries[i], 1, facecolor  = label_color[res_labels[i]], alpha=1))
+		ax.add_patch(Rectangle((res_boundaries[-2], 0), res_boundaries[-1]-res_boundaries[-2], 1, facecolor = label_color[res_labels[-1]], alpha=1))
+
+	plt.vlines(peaks,0,1,'r','dotted',linewidths=2)
+	ax = fig.add_subplot(len(songs_list)+2,1,len(songs_list)+2)
+	for i in np.arange(len(query_labels)):
+		ax.add_patch(Rectangle((query_ann[i], 0),query_ann[i+1]-query_ann[i], 1, facecolor  = label_color[query_labels[i]], alpha=1))
+
 	plt.vlines(query_ann,0,1,'g',linewidths=3)
 	plt.xlim([0,length])
-	plt.show()
+	plt.ylim([0,1])
+	plt.draw()
+	plt.tight_layout()
 
-def getAnnotation(ann_list):
-	new=[0.0]
-	for line in ann_list[0]:
-		new.append(float(line[-2]))
-	return new
+	return total
 
 def process(query_fn):
 	fig      = plt.figure(query_fn[:-4])
@@ -132,13 +161,12 @@ def process(query_fn):
 	D        = sa.downsample(P)
 	C        = sa.novelty(P)
 	gt_list  = sr.getAnnotationList(gt_path,[query_fn])
-	gt       = getAnnotation(gt_list)
+	gt       = sr.getAnnotation(gt_list)
 	ann_list = sr.getAnnotationList(res_path,[query_fn])
-	ann      = getAnnotation(ann_list)
+	ann      = sr.getAnnotation(ann_list)
 
 	plt.rc('xtick', labelsize=10) 
 	plt.rc('ytick', labelsize=10) 
-
 	ax1 = plt.subplot2grid((6,2), (0,0), rowspan=2)
 	ax1.set_title('HPCPs', fontdict=font)
 	ax1.imshow(hpcps.T, interpolation='nearest', aspect='auto')
@@ -169,18 +197,14 @@ def process(query_fn):
 	ax6.set_title('Annotation',fontdict=font)
 	ax6.vlines(gt, 0, 1, colors='k', linestyles='solid', label='')
 
-	# ax7 = plt.subplot2grid((8,4), (5, 2),rowspan=2, colspan=2)
-	# ax7.text(0.1,0.8,'Query and results information',fontsize=15,fontweight='bold')
-
 	plt.tight_layout()
-	plt.show()
+	plt.draw()
+
 
 
 if __name__ == "__main__":
-	# ann_list = sr.getAnnotationList(filename_list)
-	# process('Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv')
-	# print getAnnotation(ann_list)
-	# annotations(ann_list)
-	# gaussians('Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv')
-	addGaussians('Chopin_Op006No1_Magin-1975_pid9138-01.mp3.csv')
+
+	# process('Beatles_ForYouBlue_Beatles_1970-LetItBe-11.wav.csv')
+	allgaussians = addGaussians('Beatles_HoldMeTight_Beatles_1963-WithTheBeatles-09.wav.csv')
+	plt.show()
 
