@@ -12,8 +12,6 @@ import operator
 import matplotlib.pyplot as plt
 import evaluation.evaluate
 
-
-
 gt_path   = 'metadata/all/'
 desc_path = 'hpcp_ah6_al5_csv/'
 cand_list = 'annotation_results/alldatasets.txt'
@@ -29,9 +27,6 @@ songList  = open(cand_list).readlines()
 def addGaussians(query_fn,tree):
 	songs_list = getNeighbors(query_fn,tree)
 	M          = 23000
-	# delta      = 1000
-	# g          = signal.gaussian(M,std=delta)
-
 	query_ann    = getAnnotationList(gt_path,[query_fn])
 	query_labels = [elem[-1] for elem in query_ann[0]]
 	query_ann    = np.floor((np.array(getAnnotation(query_ann))*1000)).astype(int)
@@ -42,7 +37,6 @@ def addGaussians(query_fn,tree):
 	neighbors_annotations = getAnnotationList(gt_path,songs_list)
 
 	for i, song in enumerate(songs_list):
-		# print song
 		gt_list = getAnnotationList(gt_path,[song])
 		ann     = np.floor((np.array(getAnnotation(gt_list))*1000)).astype(int) #convert to miliseconds to mantain res
 		neighbor_dur = ann[-1]
@@ -54,7 +48,6 @@ def addGaussians(query_fn,tree):
 		ann_with_sides = np.floor(ann_with_sides*r) 
 
 		labels=[x[-1] for x in gt_list[0]] # get the labels
-		# print length
 		annotation_rescaled=[]
 		for elem in neighbors_annotations[i]:
 			label=elem[-1] #save the label so it doesnt get affected by rescaling
@@ -86,8 +79,6 @@ def addGaussians(query_fn,tree):
 	total=total/float(max(total))
 
 	peaks = getPeaks(total,neighbors_annotations)
-	# print "peaks"
-	# print peaks
 	all_songs_segmented = [segmentLabel(elem) for elem in neighbors_annotations_rescaled]
 	res_boundaries=sorted(peaks)
 	res_boundaries.insert(0,0)
@@ -97,65 +88,7 @@ def addGaussians(query_fn,tree):
 	return res_annotations
 # ---------------------------- #
 
-# ---- OLD METHOD ------ #
-# def addGaussians(query_fn,tree):
-# 	songs_list = getNeighbors(query_fn,tree)
-# 	M          = 100000
-# 	delta      = 1500
-# 	g          = signal.gaussian(M,std=delta)
-
-# 	query_ann    = getAnnotationList(gt_path,[query_fn])
-# 	query_labels = [elem[-1] for elem in query_ann[0]]
-# 	query_ann    = np.floor((np.array(getAnnotation(query_ann))*1000)).astype(int)
-# 	length       = query_ann[-1]
-# 	total        = np.zeros(int(np.ceil(length)))
-
-# 	neighbors_annotations_rescaled = []
-# 	neighbors_annotations = getAnnotationList(gt_path,songs_list)
-# 	annotation_rescaled=[]
-
-# 	for i, song in enumerate(songs_list):
-# 		# print song
-# 		gt_list = getAnnotationList(gt_path,[song])
-# 		ann     = np.floor((np.array(getAnnotation(gt_list))*1000)).astype(int) #convert to miliseconds to mantain res
-# 		neighbor_dur = ann[-1]
-# 		ann_with_sides=ann
-# 		ann = ann[1:-1]
-# 		a = np.zeros(int(np.ceil(length)))
-# 		r = float(length)/float(neighbor_dur) #rescale according to query duration
-# 		ann = np.floor(ann*r)
-# 		labels=[x[-1] for x in gt_list[0]] # get the labels
-# 		# print length
-# 		for elem in neighbors_annotations[i]:
-# 			label=elem[-1] #save the label so it doesnt get affected by rescaling
-# 			elem[0]=int(np.floor(float(elem[0])*1000*r)) #rescale the rest
-# 			elem[1]=int(np.floor(float(elem[1])*1000*r))
-# 			annotation_rescaled.append([elem[0],elem[1],label])
-# 		neighbors_annotations_rescaled.append(annotation_rescaled)
-# 		# print neighbors_annotations_rescaled
-# 		for loc in ann:		
-# 			if loc < np.floor(M/2):
-# 				a+=np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
-# 			elif loc + np.floor(M/2) > length:
-# 				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
-# 			else:
-# 				a+=np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
-# 		total+=a
-# 	total=total/float(max(total))
-
-# 	peaks = getPeaks(total,neighbors_annotations)
-# 	# print "peaks"
-# 	# print peaks
-# 	all_songs_segmented = [segmentLabel(elem) for elem in neighbors_annotations_rescaled]
-# 	res_boundaries=sorted(peaks)
-# 	res_boundaries.insert(0,0)
-# 	res_boundaries.append(length)
-# 	res_labels = mergeLabels(res_boundaries,all_songs_segmented)
-# 	res_annotations = formatAnnotation(res_boundaries,res_labels)
-# 	return res_annotations
-# ---------------------------- #
-
-# ------- LABELS METHOD ------ #
+# ------- METHOD II ------ #
 def labelsMethod(query_fn,tree):
 	songs_list = getNeighbors(query_fn,tree)
 	query_ann  = np.floor((np.array(getAnnotation(getAnnotationList(gt_path,[query_fn])))*1000)).astype(int)
@@ -191,10 +124,7 @@ def labelsMethod(query_fn,tree):
 			current_value.append(song[i])
 		res_array.append(list(stats.mode(current_value)[0])[0])
 
-	# res_array=np.array(res_array).astype(float)
-	# res_array=morphology.grey_dilation(res_array, size=(100,1), footprint=None, structure=None, output=None, mode='reflect', cval=0.0, origin=0)
 	res_array=removeGaps(res_array,W=11) #
-	# res_array=removeGaps2(res_array,median_num_boundaries=median_num_boundaries) #
 	boundaries=[0]
 	current_count=0
 	labels=[]
@@ -252,7 +182,6 @@ def removeGaps2(res_array,median_num_boundaries):
 
 	return res_array
 
-
 def getMarks(res_array):
 	summ=0
 	marks=[0]
@@ -293,11 +222,8 @@ def purgeNeighbors(neighbors_fn_list):
 def getNeighbors(query_fn,tree):
 	sf_query = np.loadtxt(sf_path+query_fn)
 	songnumb = querySong(sf_query,tree,Kneighbors=K+1).tolist()[0] #K+1 neighbors cause later we remove the query
-	# print songnumb[2973]
 	print songnumb
 	neighbors_fn_list = [songList[i][:-1] for i in songnumb if not songList[i][:-5]==query_fn[:-4]]
-	# print neighbors_fn_list
-	# neighbors_fn_list = purgeNeighbors(neighbors_fn_list)
 	c=0
 	# while len(neighbors_fn_list)!=K:
 	# 	c+=1
@@ -315,7 +241,6 @@ def unpickleAsArray(sf_pickle):
 	return dataM
 
 def getPeaks(signal, neighbors_annotations):
-	# print neighbors_annotations
 	num_boundaries_all = [len(x)-1 for x in neighbors_annotations]
 	median_num_boundaries = int(np.median(num_boundaries_all))
 	peaks = list(peakdetect.peakdetect(signal,lookahead=500,delta=0.2))
@@ -360,25 +285,12 @@ def parseAnnotation(unparsed_annotation):
 		parsed_annotation.append(new_elem)
 	return parsed_annotation
 
-# def segmentLabel(annotation):
-# 	''' Segments the labels into an array of labels. Resolution: 1 label/ms. This is probably too much '''
-# 	annotation_array = getAnnotation([annotation])
-# 	labels = [elem[-1] for elem in annotation]
-# 	segmented=[]
-# 	for i in np.arange(len(labels)):
-# 		N = int(np.floor(annotation_array[i+1]-annotation_array[i]))
-# 		segmented.extend(N*[labels[i]])
-# 	print "_"*100
-# 	print segmented[:5000]
-# 	return segmented
 
 def segmentLabel(annotation):
 	''' Segments the labels into an array of labels. Resolution: 1 label/t ms. '''
 	t = T
 	annotation_array = getAnnotation([annotation])
 	labels = [elem[-1] for elem in annotation]
-	# print annotation_array
-	# print labels
 	segmented=[]
 	short = []
 	for i in np.arange(len(labels)):
@@ -387,37 +299,11 @@ def segmentLabel(annotation):
 	short=segmented[0::t]
 	# print short
  	return short	
- 
-
-# def mergeLabels(res_boundaries,all_songs_segmented):
-# 	''' Combines all songs annotations to get the resulting one'''
-
-# 	res_array  = []
-# 	res_labels = []
-	
-# 	for i in np.arange(len(all_songs_segmented[0])):
-# 		current_value=[]
-# 		for song in all_songs_segmented:
-# 			current_value.append(song[i])
-# 		res_array.append(list(stats.mode(current_value)[0])[0])
-# 	for i in np.arange(len(res_boundaries)-1):
-# 		section=res_array[res_boundaries[i]:res_boundaries[i+1]]
-# 		print "section"
-# 		print "_"*50
-# 		print section
-# 		res_labels.append(list(stats.mode(section)[0])[0])
-# 	return res_labels
 
 def mergeLabels(res_boundaries,all_songs_segmented):
 	''' Combines all songs annotations to get the resulting one'''
 	res_array  = []
 	res_labels = []
-	# print "res_boundaries"
-	# print res_boundaries
-	# print len(all_songs_segmented[0])
-	# print len(all_songs_segmented[1])
-	# print len(all_songs_segmented[2])
-	
 	min_len=min([len(x) for x in all_songs_segmented]) #In case the segmentation returns different lengths for each song get the min of all. the error is t
 	res_boundaries=np.array(res_boundaries)/T
 	for i in np.arange(len(res_boundaries)-1): #dirty way of avoiding errors if sections are too short
@@ -485,22 +371,6 @@ def storeResults(list_fn,cand_list,res_path,sf_pickle):
 			print fn + " not found"
 	f.close()
 
-
-
-# def formatAnnotationArray(annotation_array,labels_array):
-# 	new_ann=[]
-# 	new_elem=[0]
-# 	new_elem.append(float(annotation_array[0])/1000) #converting to s goes here for now
-# 	new_elem.append('0') #random label for now
-# 	new_ann.append(new_elem) 
-# 	for i in np.arange(1,len(annotation_array)):
-# 		new_elem=[]
-# 		new_elem.append(float(annotation_array[i-1])/1000)
-# 		new_elem.append(float(annotation_array[i])/1000)
-# 		new_elem.append('0')
-# 		new_ann.append(new_elem)
-# 	return new_ann
-
 def formatAnnotation(boundaries_array, labels_array):
 	new_ann = []
 	for i in np.arange(len(labels_array)):
@@ -557,26 +427,11 @@ if __name__ == "__main__":
 	#	Case 4: mazurkas vs all
 	#	Case 5: rwcP vs rwcP
 	#	Case 6: rwcP vs all
+	
 	for i in np.arange(9,11):
 		print i
 		(sf_pickle, query_list,	cand_list, res_path) = listSelection(i)
 		songList  = open(cand_list).readlines()
 		storeResults(query_list,cand_list,res_path,sf_pickle)
 		evaluation.evaluate.process(i)
-
-	# (sf_pickle, query_list,	cand_list, res_path) = listSelection(2)
-	# songList = open(cand_list).readlines()
-
-	# query_list = 'annotation_results/test.txt'
-	# storeResults(query_list,cand_list,res_path)
-	# printInfo(query_list,cand_list)
-	# train_set = sa.getPickle(sf_pickle,cand_list)
-	# tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
-	# n = getNeighbors('Chopin_Op006No1_Ashkenazy-1981_pid9058-01.mp3.csv',tree)
-	# print n
-	# print len(n)
-	# print segmentLabel('Beatles_TheContinuingStoryOfBungalowBill_Beatles_1968-TheBeatlesTheWhiteAlbumDisc1-06.wav.lab')
-	
-	# anno=labelsMethod('Chopin_Op017No3_Meguri-1997_pid9137-08.mp3.csv',tree)
-	# print anno	
 

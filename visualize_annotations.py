@@ -63,91 +63,7 @@ def annotations(annotations_list):
 	fig.text(0.5, 0.04, 'time (s)', ha='center', va='center')
 	plt.show()
  	
-## ----- OLD VERSION WITHOUT RESCALING GAUSSIANS ACCORDING TO LENGTH OF SECTION --- #
-# def addGaussians(query_fn):
-# 	train_set = sa.getPickle(sf_pickle,cand_list)
-# 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
 
-# 	songs_list   = sr.getNeighbors(query_fn,tree)
-# 	M            = 9000
-# 	sigma        = 1500
-# 	g            = signal.gaussian(M,std=sigma)
-# 	query_ann    = sr.getAnnotationList(gt_path,[query_fn])
-# 	query_labels = [elem[-1] for elem in query_ann[0]]
-# 	query_ann    = np.floor((np.array(sr.getAnnotation(query_ann))*1000)).astype(int)
-# 	length       = query_ann[-1]
-# 	total        = np.zeros(int(np.ceil(length)))
-	
-# 	neighbors_annotations = sr.getAnnotationList(gt_path,songs_list)
-# 	neighbors_annotations_rescaled = []
-# 	train_set = sa.getPickle(sf_pickle,cand_list)
-# 	tree = neighbors.KDTree(train_set,leaf_size=100,p=2)
-# 	fig = plt.figure()
-# 	for i, song in enumerate(songs_list):
-# 		print song
-# 		gt_list = sr.getAnnotationList(gt_path,[song])
-# 		ann = np.floor((np.array(sr.getAnnotation(gt_list))*1000)).astype(int) #convert to miliseconds to mantain res
-#  		neighbor_dur = ann[-1]
-#  		ann_with_sides = ann
-# 		ann = ann[1:-1] #exclude starting and ending points
-# 		a = np.zeros(int(np.ceil(length)))
-# 		r = float(length)/float(neighbor_dur) #rescale according to query duration
-# 		ann = np.floor(ann*r)
-
-# 		ann_with_sides = np.floor(ann_with_sides*r) 
-# 		labels=[x[-1] for x in gt_list[0]] # get the labels
-# 		ax = fig.add_subplot(len(songs_list)+2,1,i+1)
-# 		annotation_rescaled=[]
-# 		for elem in neighbors_annotations[i]:
-# 			label=elem[-1] #save the label so it doesnt get affected by rescaling
-# 			elem[0]=int(np.floor(float(elem[0])*1000*r)) #rescale the rest
-# 			elem[1]=int(np.floor(float(elem[1])*1000*r))
-# 			annotation_rescaled.append([elem[0],elem[1],label])
-# 		neighbors_annotations_rescaled.append(annotation_rescaled)
-		
-# 		for i, loc in enumerate(ann,start=1):
-# 			currentaxis=plt.gca()
-# 			ax.add_patch(Rectangle((ann_with_sides[i-1], 0), ann_with_sides[i]-ann_with_sides[i-1], 2, facecolor=label_color[labels[i-1]], alpha=1))
-# 			ax.add_patch(Rectangle((ann_with_sides[-2], 0), ann_with_sides[-1]-ann_with_sides[-2], 2, facecolor=label_color[labels[-1]], alpha=1))
-# 			if loc < np.floor(M/2):
-# 				a += np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
-# 			elif loc + np.floor(M/2) > length:
-# 				a += np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
-# 			else:
-# 				a += np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g,np.zeros(int(length-loc-np.floor(M/2))))))
-
-# 		total += a
-# 		plt.vlines(ann,0,1,colors='r')
-# 		plt.plot(a,color='k')
-# 		plt.xlim([0,length])
-# 	total=total/float(max(total))
-# 	ax = fig.add_subplot(len(songs_list)+2,1,len(songs_list)+1)
-# 	plt.plot(total)
-# 	plt.xlim([0,length])
-# 	plt.ylim([0,1])
-# 	peaks = sr.getPeaks(total,neighbors_annotations)
-	
-# 	all_songs_segmented = [sr.segmentLabel(elem) for elem in neighbors_annotations_rescaled]
-# 	res_boundaries=sorted(peaks)
-# 	res_boundaries.insert(0,0)
-# 	res_boundaries.append(length) #cause all songs are supposed to be the same length now
-# 	res_labels = sr.mergeLabels(res_boundaries,all_songs_segmented)
-
-# 	for i in np.arange(len(res_labels)):
-# 		ax.add_patch(Rectangle((res_boundaries[i], 0),res_boundaries[i+1]-res_boundaries[i], 1, facecolor  = label_color[res_labels[i]], alpha=1))
-# 		ax.add_patch(Rectangle((res_boundaries[-2], 0), res_boundaries[-1]-res_boundaries[-2], 1, facecolor = label_color[res_labels[-1]], alpha=1))
-# 	plt.vlines(peaks,0,1,'r','dotted',linewidths=2)
-# 	ax = fig.add_subplot(len(songs_list)+2,1,len(songs_list)+2)
-
-# 	for i in np.arange(len(query_labels)):
-# 		ax.add_patch(Rectangle((query_ann[i], 0),query_ann[i+1]-query_ann[i], 1, facecolor  = label_color[query_labels[i]], alpha=1))
-# 	plt.vlines(query_ann,0,1,'g',linewidths=3)
-# 	plt.xlim([0,length])
-# 	plt.ylim([0,1])
-# 	plt.draw()
-# 	plt.tight_layout()
-# 	res_annotations=sr.formatAnnotation(res_boundaries,res_labels)
-# 	return res_annotations
 
 def addGaussians(query_fn):
 	train_set = sa.getPickle(sf_pickle,cand_list)
@@ -155,8 +71,6 @@ def addGaussians(query_fn):
 
 	songs_list   = sr.getNeighbors(query_fn,tree)
 	M            = 23000 #VALORES MUY ALTOS FALLA si M/2>loc+length
-	# sigma        = 1500
-	# g            = signal.gaussian(M,std=sigma)
 	query_ann    = sr.getAnnotationList(gt_path,[query_fn])
 	query_labels = [elem[-1] for elem in query_ann[0]]
 	query_ann    = np.floor((np.array(sr.getAnnotation(query_ann))*1000)).astype(int)
@@ -189,17 +103,13 @@ def addGaussians(query_fn):
 			elem[1]=int(np.floor(float(elem[1])*1000*r))
 			annotation_rescaled.append([elem[0],elem[1],label])
 		neighbors_annotations_rescaled.append(annotation_rescaled)
-		# print ann
-		# print ann_with_sides
 		for i, loc in enumerate(ann,start=1):
 			section_length=ann_with_sides[i]-ann_with_sides[i-1]
 			sigma = 0.1*section_length
-			# M=int(np.floor(0.6*section_length))
 			g1 = signal.gaussian(M,std=sigma)
 			half1=int(np.floor(len(g1)/2))
 			section_length=ann_with_sides[i+1]-ann_with_sides[i]
 			sigma=0.1*section_length
-			# M=int(np.floor(0.6*section_length))
 			g2=signal.gaussian(M,std=sigma)
 			half2=int(np.floor(len(g2)/2))
 
@@ -207,14 +117,8 @@ def addGaussians(query_fn):
 			currentaxis=plt.gca()
 			ax.add_patch(Rectangle((ann_with_sides[i-1], 0), ann_with_sides[i]-ann_with_sides[i-1], 1, facecolor=label_color[labels[i-1]], alpha=1))
 			ax.add_patch(Rectangle((ann_with_sides[-2], 0), ann_with_sides[-1]-ann_with_sides[-2], 1, facecolor=label_color[labels[-1]], alpha=1))
-			# print "length: "+str(length)
-			# print "loc: "+str(loc)
-			# print "M: "+str(M)
-			# print len(g[int(np.floor(M/2)-loc):])
-			# print int(np.floor(M/2)-loc)
-			# print int(length-loc-np.floor(M/2))
+		
 			if loc < np.floor(M/2):
-				# print "IN----"
 				a += np.array(np.concatenate((g[int(np.floor(M/2)-loc):],np.zeros(int(length-loc-np.floor(M/2))))))
 			elif loc + np.floor(M/2) > length:
 				a += np.array(np.concatenate((np.zeros(int(loc-np.floor(M/2))),g[:int(length+np.floor(M/2)-loc)])))
@@ -223,8 +127,6 @@ def addGaussians(query_fn):
 			ax.set_xticklabels([])
 			ax.set_yticklabels([])
 		ax.set_ylabel('K = %d'%(c+1),rotation='vertical')
-			# print "------------"
-
 
 		total += a
 		plt.vlines(ann,0,1,colors='r')
@@ -265,7 +167,6 @@ def addGaussians(query_fn):
 	plt.xlim([0,length])
 	plt.ylim([0,1])
 	plt.draw()
-	# plt.tight_layout()
 	res_annotations=sr.formatAnnotation(res_boundaries,res_labels)
 	return res_annotations
 
@@ -297,10 +198,7 @@ def labels(query_fn):
 		labels=[x[-1] for x in gt_list[0]] # get the labels
 		ax = fig.add_subplot(len(songs_list)+2,1,c+1)
 		annotation_rescaled=[]
-		# print ann_with_sides
-		# print labels
 		for i, loc in enumerate(ann,start=1):
-			# print ann_with_sides[]
 			currentaxis=plt.gca()
 			ax.add_patch(Rectangle((ann_with_sides[i-1], 0), ann_with_sides[i]-ann_with_sides[i-1], 2, facecolor=label_color[labels[i-1]], alpha=1))
 			ax.add_patch(Rectangle((ann_with_sides[-2], 0), ann_with_sides[-1]-ann_with_sides[-2], 2, facecolor=label_color[labels[-1]], alpha=1))
@@ -324,7 +222,6 @@ def labels(query_fn):
 	plt.ylim([0,1])
 	ax = fig.add_subplot(len(songs_list)+2,1,len(songs_list)+2)
 	for i in np.arange(len(query_labels)):
-		# pass
 		ax.add_patch(Rectangle((query_ann[i], 0),query_ann[i+1]-query_ann[i], 1, facecolor  = label_color[query_labels[i]], alpha=1))
 	ax.set_ylabel('Ground Truth')
 	ax.set_yticklabels([],fontsize=10)
@@ -381,11 +278,8 @@ def process(query_fn):
 	plt.tight_layout()
 	plt.draw()
 
-
-
 if __name__ == "__main__":
 
-	# process('Beatles_ForYouBlue_Beatles_1970-LetItBe-11.wav.csv')
 	addGaussians('Beatles_TellMeWhatYouSee_Beatles_1965-Help-11.wav.csv')
 	# labels('Chopin_Op007No2_Bacha-1997_pid9166c-09.mp3.csv')
 	# labels('Beatles_AcrossTheUniverse_Beatles_1970-LetItBe-03.wav.csv')
