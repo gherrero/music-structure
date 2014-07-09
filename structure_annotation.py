@@ -45,7 +45,7 @@ def do_cprofile(func):
 
 #------STRUCTURE FEATURES EXTRACTION--------#
 
-def delayCoord(x):
+def delayCoord(x,m,tau):
 	y = np.zeros((x.shape[0]-(m-1)*tau,x.shape[1]*m))
 	for j in range(0,m):
 		posj = j*x.shape[1]
@@ -55,16 +55,12 @@ def delayCoord(x):
 
 def ssm(X):
 	K = int(kappa*X.shape[0])
-	# print "K = "+str(K)
 	R = np.zeros([X.shape[0],X.shape[0]])
 	i = 0
-	# tree=spatial.KDTree(X,leafsize=10) #using scipy
-	tree=neighbors.KDTree(X,leaf_size=100,p=2.0) #using sklearn
+	tree=neighbors.KDTree(X,leaf_size=100,p=2.0)
 	for i in range(X.shape[0]):
-		# distance, index = tree.query(row,k=K,p=2)
 		index = tree.query(X[i,:],k=K,return_distance=False)
 		R[i,index] = 1
-		# i=i+1
 	RT = R.T
 	R = R*RT
 	return R
@@ -153,9 +149,9 @@ def extractSF(hpcps):
 	y  = delayCoord(hpcps, m, tau)
 	R  = ssm(y)
 	L  = circShift(R)
-	P  = gaussianBlur(L)
-	D  = downsample(P)
-	sf = storeAsArray(D)
+	sf  = gaussianBlur(L)
+	# D  = downsample(P)
+	# sf = storeAsArray(P)
 	# sf = normalize(sf)
 	return sf	
 
@@ -171,7 +167,7 @@ def printProcess(filename):
 	y = delayCoord(hpcps) # apply delay coordinates
 	R = ssm(y)
 	plt.imshow(R,cmap = cm.binary,interpolation='nearest')
-	plt.title(filename)
+	# plt.title(filename)
 	plt.figure()
 	L = circShift(R)
 	plt.subplot(211)
@@ -207,6 +203,15 @@ def processFiles(filename):
 		f.close()
 	flist.close()
 
+def storeAsCSVMatrix(filename):
+	flist = open(filename,'r')
+	for i,line in enumerate(flist,start=1):
+		print str(i)+": "+line[:-1]
+		hpcps = np.loadtxt(desc_path + line[:-1], delimiter=',')
+		sf = extractSF(hpcps)
+		np.savetxt(res_path+line[:-1],sf,delimiter='\t',fmt='%.5f')
+	flist.close()
+
 def storePickle(filename):
 	flist = open(filename,'r')
 	pick = open(pickle_fn,'w')
@@ -232,12 +237,12 @@ def getPickle(pickle_fn,list_fn):
 if __name__ == "__main__":
 
 	desc_path = 'hpcp_ah6_al5_csv/'
-	res_path  = 'sfs/alldatasets-n100/'
+	res_path  = 'sfs/alldatasets-no-downsampling/'
 	desc_list = 'sfs/alldatasets-n100.txt'
-	pickle_fn = 'alldatasets-n100.pickle'
+	pickle_fn = 'alldatasets-no-downsampling.pickle'
 
-	filename  = 'Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv'
+	filename  = 'Beatles_AcrossTheUniverse_Beatles_1970-LetItBe-03.wav.csv'
 
-
-	# storePickle(desc_list)
-	printProcess(filename)
+	storeAsCSVMatrix(desc_list)
+	storePickle(desc_list)
+	# printProcess(filename)

@@ -7,35 +7,34 @@ import random
 
 #Dataset-dependent
 SYSTEM = 1 # every LAG seconds
-SYSTEM = 2 # avg song boundary length averaged over entire dataset
-SYSTEM = 3 # avg boundary length of entire dataset
-SYSTEM = 4 # NUMBOUND number of boundaries randomly placed
-SYSTEM = 5 # average # of boundaries randomly placed
+# SYSTEM = 2 # avg song boundary length averaged over entire dataset
+# SYSTEM = 3 # avg boundary length of entire dataset
+# SYSTEM = 4 # NUMBOUND number of boundaries randomly placed
+# SYSTEM = 5 # average # of boundaries randomly placed
 # SYSTEM = 6 # combination of avg # and length? Is this possible?
 
 NUMBOUND = 10
 LAG      = 3
 #Song-dependent
 
-fullfn='fakeboundaries/'
+fullfn='../fakeboundaries/'
 
 
 # READ ANNOTATIONS FILES AND CREATE FAKE RANDOM BOUNDARIES
-folder= os.listdir("../metadata/rwc/mylabfilesIRISA_tab")
+folder= os.listdir("../metadata/mazurkas/mylabfilesMPI_tab")
 songs=[]
 avgSongLen=0
 sumBoundaries=0
 sumBoundaryLen=0
 
 filelist=open('filelist.txt','w')
-
+# fl=filelist.readlines()
 for f in folder:
-
-	res=csvio.load('../metadata/rwc/mylabfilesIRISA_tab/'+f,'\t')
+	res=csvio.load('../metadata/mazurkas/mylabfilesMPI_tab/'+f,'\t')
 	
 	lengthAudio=res[-1][1]
 	fFakes=open(fullfn+f,'w')
-	filelist.write(f+'\n')
+	# filelist.write(f+'\n')
 
 	if SYSTEM==1:
 		t=LAG

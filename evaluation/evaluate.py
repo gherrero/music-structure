@@ -3,6 +3,7 @@ import csvio
 import csv
 import time
 import os.path
+import sys
 
 THRESHOLD_FINE      = 0.5
 THRESHOLD_COARSE    = 3
@@ -260,11 +261,45 @@ def print_overall(fF,F):
 	print ''
 	return True
 
-if __name__=="__main__":
+def selection(case):
 
-	filenameList    = '../annotation_results/beatlesQMUL.txt'
-	pathResults     = '../annotation_results/beatlesQMUL-n100/'
-	pathGroundTruth = '../metadata/beatles/mylabfilesQMUL_tab/'
+	return {
+		# (filenameList, pathResults, pathGroundTruth)
+		1: ('annotation_results/beatlesQMUL.txt','annotation_results/beatlesQMUL-n100/','metadata/beatles/mylabfilesQMUL_tab/'),
+		2: ('annotation_results/beatlesQMUL.txt','annotation_results/beatlesQMUL-all-n100/','metadata/beatles/mylabfilesQMUL_tab/'),		
+		3: ('annotation_results/chopin.txt','annotation_results/chopin-n100/','metadata/mazurkas/mylabfilesMPI_tab/'),		
+		4: ('annotation_results/chopin.txt','annotation_results/chopin-all-n100/','metadata/mazurkas/mylabfilesMPI_tab/'),		
+		5: ('annotation_results/rwcP.txt','annotation_results/rwcAIST-n100/','metadata/rwc/mylabfilesAIST_tab/'),		
+		6: ('annotation_results/rwcP.txt','annotation_results/rwcAIST-all-n100/','metadata/rwc/mylabfilesAIST_tab/'),		
+		7: ('annotation_results/beatlesTUT.txt','annotation_results/beatlesTUT-n100/','metadata/beatles/mylabfilesTUT_tab/'),		
+		8: ('annotation_results/beatlesTUT.txt','annotation_results/beatlesTUT-all-n100/','metadata/beatles/mylabfilesTUT_tab/'),		
+		9: ('annotation_results/rwcP.txt','annotation_results/rwcIRISA-n100/','metadata/rwc/mylabfilesIRISA_tab/'),
+		10: ('annotation_results/rwcP.txt','annotation_results/rwcIRISA-all-n100/','metadata/rwc/mylabfilesIRISA_tab/'),
+	}[case]
+
+def process(i):
+	(filenameList,pathResults,pathGroundTruth)=selection(i)
+
+	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
+	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
+
+	f = csv.writer(open("results.csv", "a"))
+	
+	f.writerow([time.strftime("%H:%M %d/%m"),"Threshold","Precision","Recall","F-Score"])
+	f.writerow(["",THRESHOLD_FINE, "%.3f"%mean(fP) +" (" +"%.3f"%std(fP)+")", "%.3f"%mean(fR) +" (" +"%.3f"%std(fR)+")", "%.3f"%mean(fF) +" (" +"%.3f"%std(fF)+")"])
+	f.writerow(["",THRESHOLD_COARSE, "%.3f"%mean(cP) +" (" +"%.3f"%std(cP)+")", "%.3f"%mean(cR) +" (" +"%.3f"%std(cR)+")", "%.3f"%mean(cF) +" (" +"%.3f"%std(cF)+")"])
+
+	P,R,F,So,Su=labels_filelist(filenameList,pathResults,pathGroundTruth)
+	print_labels(P,R,F,So,Su)
+
+if __name__=="__main__":
+	# case=sys.argv[1]
+	
+	filenameList    = '../annotation_results/chopin.txt'
+	pathResults     = '../fakeboundaries/'
+	pathGroundTruth = '../metadata/mazurkas/mylabfilesMPI_tab/'
+
+	# (filenameList,pathResults,pathGroundTruth)=selection()
 
 	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
 	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
