@@ -9,9 +9,17 @@ THRESHOLD_FINE      = 0.5
 THRESHOLD_COARSE    = 3
 TEMPORAL_RESOLUTION = 0.3
 
+#--------------------------------------------#
+# ADAPTED FROM CODE BY: Joan Serra, 		 #
+#						Meinard Mueller,	 #
+#						Peter Grosche		 #
+# 					and Josep Lluis Arcos	 # 
+#--------------------------------------------#
+
 def boundaries_filelist(filenameList,pathResults,pathGroundTruth):
-	f=open(filenameList,'r')
-	lines=f.readlines()
+	print "evaluating boundaries"
+	f = open(filenameList,'r')
+	lines = f.readlines()
 	f.close()
 	finePrecision   = []
 	fineRecall      = []
@@ -21,9 +29,10 @@ def boundaries_filelist(filenameList,pathResults,pathGroundTruth):
 	coarseFmeasure  = []
 	guess2True      = []
 	true2Guess      = []
+
 	for line in lines:
-		fields=line[0:len(line)-1].split('/')
-		fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_singlefile(pathResults+fields[len(fields)-1],pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
+		fields = line[0:len(line)-1].split('/')
+		fP,fR,fF,cP,cR,cF,G2T,T2G = boundaries_singlefile(pathResults+fields[len(fields)-1],pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
 		finePrecision.append(fP)
 		fineRecall.append(fR)
 		fineFmeasure.append(fF)
@@ -35,18 +44,18 @@ def boundaries_filelist(filenameList,pathResults,pathGroundTruth):
 	return finePrecision,fineRecall,fineFmeasure,coarsePrecision,coarseRecall,coarseFmeasure,guess2True,true2Guess
 
 def labels_filelist(filenameList,pathResults,pathGroundTruth):
-	f=open(filenameList,'r')
-	lines=f.readlines()
+	print "evaluating labels"
+	f = open(filenameList,'r')
+	lines = f.readlines()
 	f.close()
-	Precision=[]
-	Recall=[]
-	Fmeasure=[]
-	OverSeg=[]
-	UnderSeg=[]
+	Precision = []
+	Recall = []
+	Fmeasure = []
+	OverSeg = []
+	UnderSeg = []
 	for i,line in enumerate(lines):
-		print i
-		fields=line[0:len(line)-1].split('/')
-		P,R,F,So,Su=labels_singlefile(pathResults+fields[len(fields)-1],pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
+		fields = line[0:len(line)-1].split('/')
+		P,R,F,So,Su = labels_singlefile(pathResults+fields[len(fields)-1],pathGroundTruth+fields[len(fields)-1][:-4]+'.lab')
 		Precision.append(P)
 		Recall.append(R)
 		Fmeasure.append(F)
@@ -57,118 +66,116 @@ def labels_filelist(filenameList,pathResults,pathGroundTruth):
 def boundaries_singlefile(fnResult,fnGT):
 	# Load files
 	res=csvio.load(fnResult,'\t')
-	# print res
-	# print fnGT
 	gt=csvio.load(fnGT,'\t')
 	# Get boundaries
-	resBoundaries=[]
+	resBoundaries = []
 	for i in range(0,res.shape[0]): resBoundaries.append(res[i,0])
 	resBoundaries.append(res[res.shape[0]-1,1])
 	gtBoundaries=[]
 	for i in range(0,gt.shape[0]): gtBoundaries.append(gt[i,0])
 	gtBoundaries.append(gt[gt.shape[0]-1,1])
 	# Evaluate boundaries (Precision)
-	fineMatches=0
-	coarseMatches=0
+	fineMatches = 0
+	coarseMatches = 0
 	for i in range(0,len(resBoundaries)):
 		for j in range(0,len(gtBoundaries)):
 			if abs(gtBoundaries[j]-resBoundaries[i])<THRESHOLD_FINE:
-				fineMatches+=1
+				fineMatches += 1
 				break
 	for i in range(0,len(resBoundaries)):
 		for j in range(0,len(gtBoundaries)):
 			if abs(gtBoundaries[j]-resBoundaries[i])<THRESHOLD_COARSE:
-				coarseMatches+=1
+				coarseMatches += 1
 				break
-	fP=float(fineMatches)/float(len(resBoundaries))
-	cP=float(coarseMatches)/float(len(resBoundaries))
+	fP = float(fineMatches)/float(len(resBoundaries))
+	cP = float(coarseMatches)/float(len(resBoundaries))
 	# Evaluate boundaries (guess to true)
-	gtt=[]
+	gtt = []
 	for i in range(0,len(resBoundaries)):
-		minTime=10000000
+		minTime = 10000000
 		for j in range(0,len(gtBoundaries)):
-			dif=abs(gtBoundaries[j]-resBoundaries[i])
-			if dif<minTime: minTime=dif
+			dif = abs(gtBoundaries[j]-resBoundaries[i])
+			if dif<minTime: minTime = dif
 		gtt.append(minTime)
 	# Evaluate boundaries (Recall)
-	fineMatches=0
-	coarseMatches=0
+	fineMatches = 0
+	coarseMatches = 0
 	for i in range(0,len(gtBoundaries)):
 		for j in range(0,len(resBoundaries)):
 			if abs(gtBoundaries[i]-resBoundaries[j])<THRESHOLD_FINE:
-				fineMatches+=1
+				fineMatches += 1
 				break
 	for i in range(0,len(gtBoundaries)):
 		for j in range(0,len(resBoundaries)):
 			if abs(gtBoundaries[i]-resBoundaries[j])<THRESHOLD_COARSE:
-				coarseMatches+=1
+				coarseMatches += 1
 				break
-	fR=float(fineMatches)/float(len(gtBoundaries))
-	cR=float(coarseMatches)/float(len(gtBoundaries))
+	fR = float(fineMatches)/float(len(gtBoundaries))
+	cR = float(coarseMatches)/float(len(gtBoundaries))
 	# Evaluate boundaries (true to guess)
-	ttg=[]
+	ttg = []
 	for i in range(0,len(gtBoundaries)):
-		minTime=10000000
+		minTime = 10000000
 		for j in range(0,len(resBoundaries)):
-			dif=abs(gtBoundaries[i]-resBoundaries[j])
-			if dif<minTime: minTime=dif
+			dif = abs(gtBoundaries[i]-resBoundaries[j])
+			if dif<minTime: minTime = dif
 		ttg.append(minTime)
 	# Evaluate boundaries (F-measure)
-	if fP>0 or fR>0: fF=2.0*fP*fR/(fP+fR)
-	else: fF=0.0
-	if cP>0 or cR>0: cF=2.0*cP*cR/(cP+cR)
-	else: fF=0.0
+	if fP>0 or fR>0: fF = 2.0*fP*fR/(fP+fR)
+	else: fF = 0.0
+	if cP>0 or cR>0: cF = 2.0*cP*cR/(cP+cR)
+	else: fF = 0.0
 	return fP,fR,fF,cP,cR,cF,median(gtt),median(ttg)
 
 def labels_singlefile(fnResult,fnGT):
 	# Load files
-	res=csvio.load(fnResult,'\t')
-	gt=csvio.load(fnGT,'\t')
+	res = csvio.load(fnResult,'\t')
+	gt = csvio.load(fnGT,'\t')
 	# Get boundaries
-	resBoundaries=[]
+	resBoundaries = []
 	for i in range(0,res.shape[0]): resBoundaries.append(res[i,0])
 	resBoundaries.append(res[res.shape[0]-1,1])
-	gtBoundaries=[]
+	gtBoundaries = []
 	for i in range(0,gt.shape[0]): gtBoundaries.append(gt[i,0])
 	gtBoundaries.append(gt[gt.shape[0]-1,1])
 	# Get labels
-	resLabels=[]
+	resLabels = []
 	for i in range(0,res.shape[0]): resLabels.append(res[i,2])
-	gtLabels=[]
+	gtLabels = []
 	for i in range(0,gt.shape[0]): gtLabels.append(gt[i,2])
 	# Generate frames
-	resFrames=[]
-	ind=0.0
+	resFrames = []
+	ind = 0.0
 	while ind<resBoundaries[len(resBoundaries)-1]:
 		for i in range(1,len(resBoundaries)):
 			if ind<resBoundaries[i]:
 				break
 		resFrames.append(resLabels[i-1])
-		ind+=TEMPORAL_RESOLUTION
-	gtFrames=[]
-	ind=0.0
+		ind += TEMPORAL_RESOLUTION
+	gtFrames = []
+	ind = 0.0
 	while ind<gtBoundaries[len(gtBoundaries)-1]:
 		for i in range(1,len(gtBoundaries)):
 			if ind<gtBoundaries[i]:
 				break
 		gtFrames.append(gtLabels[i-1])
-		ind+=TEMPORAL_RESOLUTION
+		ind += TEMPORAL_RESOLUTION
 	# Pm, Ph
-	Pm=[]
+	Pm = []
 	for i in range(0,len(resFrames)):
 		for j in range(i+1,len(resFrames)):
 			if resFrames[i]==resFrames[j]:
 				Pm.append(str(i)+'-'+str(j))
-	Ph=[]
+	Ph = []
 	for i in range(0,len(gtFrames)):
 		for j in range(i+1,len(gtFrames)):
 			if gtFrames[i]==gtFrames[j]:
 				Ph.append(str(i)+'-'+str(j))
-	intersect=list(set(Pm)&set(Ph))
+	intersect = list(set(Pm)&set(Ph))
 	# Over and under segmentation
-	Le=unique(resLabels)
-	La=unique(gtLabels)
-	C=0.001*ones((len(La),len(Le)))
+	Le = unique(resLabels)
+	La = unique(gtLabels)
+	C = 0.001*ones((len(La),len(Le)))
 	for n in range(0,min(len(gtFrames),len(resFrames))):
 		for i in range(0,len(La)):
 			if gtFrames[n]==La[i]:
@@ -176,49 +183,49 @@ def labels_singlefile(fnResult,fnGT):
 		for j in range(0,len(Le)):
 			if resFrames[n]==Le[j]:
 				break
-		C[i,j]+=1.0
-	p=C/sum(C)
-	pa=zeros((len(La),1))
-	pe=zeros((len(Le),1))
+		C[i,j] += 1.0
+	p = C/sum(C)
+	pa = zeros((len(La),1))
+	pe = zeros((len(Le),1))
 	for i in range(0,len(La)):
 		for j in range(0,len(Le)):
-			pa[i,0]+=p[i,j]
-			pe[j,0]+=p[i,j]
-	pae=zeros((len(La),len(Le)))
-	pea=zeros((len(La),len(Le)))
+			pa[i,0] += p[i,j]
+			pe[j,0] += p[i,j]
+	pae = zeros((len(La),len(Le)))
+	pea = zeros((len(La),len(Le)))
 	for i in range(0,len(La)):
 		for j in range(0,len(Le)):
 			pae[i,j]=C[i,j]/sum(C[:,j])
 			pea[i,j]=C[i,j]/sum(C[i,:])
-	Hea=0.0
+	Hea = 0.0
 	for i in range(0,len(La)):
-		tmp=0.0
+		tmp = 0.0
 		for j in range(0,len(Le)):
-			tmp+=pea[i,j]*log(pea[i,j])/log(2)
-		Hea-=pa[i]*tmp
-	Hae=0.0
+			tmp += pea[i,j]*log(pea[i,j])/log(2)
+		Hea -= pa[i]*tmp
+	Hae = 0.0
 	for j in range(0,len(Le)):
-		tmp=0.0
+		tmp = 0.0
 		for i in range(0,len(La)):
-			tmp+=pae[i,j]*log(pae[i,j])/log(2)
-		Hae-=pe[j]*tmp
+			tmp += pae[i,j]*log(pae[i,j])/log(2)
+		Hae -= pe[j]*tmp
 	# Measures
 	if len(Pm)>0:
-		P=float(len(intersect))/float(len(Pm))
+		P = float(len(intersect))/float(len(Pm))
 	else:
-		P=0.0
+		P = 0.0
 	if len(Ph)>0:
-		R=float(len(intersect))/float(len(Ph))
+		R = float(len(intersect))/float(len(Ph))
 	else:
-		R=0.0
+		R = 0.0
 	if P+R>0:
-		F=2*P*R/(P+R)
+		F = 2*P*R/(P+R)
 	else:
-		F=0.0
-	if len(Le)<=0: So=1.0
-	else: So=1.0-Hea/(log(len(Le))/log(2))
-	if len(La)<=0: Su=1.0
-	else: Su=1.0-Hae/(log(len(La))/log(2))
+		F = 0.0
+	if len(Le)<=0: So = 1.0
+	else: So = 1.0-Hea/(log(len(Le))/log(2))
+	if len(La)<=0: Su = 1.0
+	else: Su = 1.0-Hae/(log(len(La))/log(2))
 	return P,R,F,So,Su
 
 def print_boundaries(fP,fR,fF,cP,cR,cF,tG2T,tT2G):
@@ -277,38 +284,48 @@ def selection(case):
 		10: ('annotation_results/rwcP.txt','annotation_results/rwcIRISA-all-n100/','metadata/rwc/mylabfilesIRISA_tab/'),
 	}[case]
 
-def process(i):
-	(filenameList,pathResults,pathGroundTruth)=selection(i)
+def process(i,K):
+	(filenameList,pathResults,pathGroundTruth) = selection(i)
+	print filenameList
+	print pathResults
+	print pathGroundTruth
 
-	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
+	fP,fR,fF,cP,cR,cF,G2T,T2G = boundaries_filelist(filenameList,pathResults,pathGroundTruth)
 	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
 
-	f = csv.writer(open("results.csv", "a"))
-	
-	f.writerow([time.strftime("%H:%M %d/%m"),"Threshold","Precision","Recall","F-Score"])
-	f.writerow(["",THRESHOLD_FINE, "%.3f"%mean(fP) +" (" +"%.3f"%std(fP)+")", "%.3f"%mean(fR) +" (" +"%.3f"%std(fR)+")", "%.3f"%mean(fF) +" (" +"%.3f"%std(fF)+")"])
-	f.writerow(["",THRESHOLD_COARSE, "%.3f"%mean(cP) +" (" +"%.3f"%std(cP)+")", "%.3f"%mean(cR) +" (" +"%.3f"%std(cR)+")", "%.3f"%mean(cF) +" (" +"%.3f"%std(cF)+")"])
+	f = csv.writer(open("testmethod3k5.csv", "a"))
+	P,R,F,So,Su = labels_filelist(filenameList,pathResults,pathGroundTruth)
 
-	P,R,F,So,Su=labels_filelist(filenameList,pathResults,pathGroundTruth)
+	# f.writerow([time.strftime("%H:%M %d/%m"),"Threshold","Precision","Recall","F-Score"])
+	# f.writerow(["",THRESHOLD_FINE, "%.3f"%mean(fP) +" (" +"%.3f"%std(fP)+")", "%.3f"%mean(fR) +" (" +"%.3f"%std(fR)+")", "%.3f"%mean(fF) +" (" +"%.3f"%std(fF)+")"])
+	# f.writerow(["",THRESHOLD_COARSE, "%.3f"%mean(cP) +" (" +"%.3f"%std(cP)+")", "%.3f"%mean(cR) +" (" +"%.3f"%std(cR)+")", "%.3f"%mean(cF) +" (" +"%.3f"%std(cF)+")"])
+	f.writerow(["Dataset: ","meanPB", "stdPB", "meanRB", "stdRB", "mean(FB)","std(FB)","meanPL","stdPL","meanRL","stdRL","mean(FL)", "std(FL)"])
+	f.writerow([i,mean(cP),std(cP),mean(cR),std(cR),mean(cF),std(cF),mean(P),std(P),mean(R),std(R),mean(F),std(F)])
 	print_labels(P,R,F,So,Su)
+	return (mean(cF),mean(F))
+
+def testMazurkasEval(num_dups,K):
+	filenameList = 'annotation_results/chopin.txt'
+	pathResults = 'annotation_results/testmazurkas/'
+	pathGroundTruth = 'metadata/mazurkas/mylabfilesMPI_tab/'
+	f = csv.writer(open("testmazurkas.csv", "a"))
+
+	fP,fR,fF,cP,cR,cF,G2T,T2G = boundaries_filelist(filenameList,pathResults,pathGroundTruth)
+	P,R,F,So,Su = labels_filelist(filenameList,pathResults,pathGroundTruth)
+	f.writerow(["Num Dups: %d"%num_dups,"mean(FB)","std(FB)","mean(FL)", "std(FL)"])
+	f.writerow([K,mean(cF),std(cF),mean(F),std(F)])
 
 if __name__=="__main__":
-	# case=sys.argv[1]
 	
 	filenameList    = '../annotation_results/chopin.txt'
-	pathResults     = '../fakeboundaries/'
+	pathResults     = '../metadata/mazurkas/mylabfilesMPI_tab/'
 	pathGroundTruth = '../metadata/mazurkas/mylabfilesMPI_tab/'
 
-	# (filenameList,pathResults,pathGroundTruth)=selection()
+	resfn = 'Chopin_Op041No4_Smith-1975_pid9054-29.mp3.lab'
+	gtfn  = 'Chopin_Op041No4_Smith-1975_pid9054-29.mp3.lab'
 
-	fP,fR,fF,cP,cR,cF,G2T,T2G=boundaries_filelist(filenameList,pathResults,pathGroundTruth)
-	print_boundaries(fP,fR,fF,cP,cR,cF,G2T,T2G)
+	res_path   = '../annotation_results/testmazurkas/'
+	gt_path    = '../metadata/mazurkas/mylabfilesMPI_tab/'
 
-	f = csv.writer(open("results.csv", "a"))
-	
-	f.writerow([time.strftime("%H:%M %d/%m"),"Threshold","Precision","Recall","F-Score"])
-	f.writerow(["",THRESHOLD_FINE, "%.3f"%mean(fP) +" (" +"%.3f"%std(fP)+")", "%.3f"%mean(fR) +" (" +"%.3f"%std(fR)+")", "%.3f"%mean(fF) +" (" +"%.3f"%std(fF)+")"])
-	f.writerow(["",THRESHOLD_COARSE, "%.3f"%mean(cP) +" (" +"%.3f"%std(cP)+")", "%.3f"%mean(cR) +" (" +"%.3f"%std(cR)+")", "%.3f"%mean(cF) +" (" +"%.3f"%std(cF)+")"])
-
-	P,R,F,So,Su=labels_filelist(filenameList,pathResults,pathGroundTruth)
-	print_labels(P,R,F,So,Su)
+	fP,fR,fF,cP,cR,cF,mediangtt,medianttg= boundaries_singlefile(res_path+resfn,gt_path+gtfn)
+	print cP, cR, cF, fP, fR, fF

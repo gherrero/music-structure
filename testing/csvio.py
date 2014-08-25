@@ -5,7 +5,7 @@ def load(filename,separator):
 	# print filename, separator
 	lines=f.readlines()
 	f.close()
-	fields=lines[0].split(separator)
+	fields=lines[1].split(separator)
 	NROWS=len(lines)
 	NCOLS=len(fields)
 	data=zeros((NROWS,NCOLS))

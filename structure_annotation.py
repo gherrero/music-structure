@@ -12,7 +12,6 @@ from collections import deque
 import pickle
 
 #-------------PARAMETERS-----------------#
-
 hop_size    = 0.1393
 min_len     = 3
 m           = 22
@@ -21,15 +20,15 @@ lver        = 215
 lhor        = 2
 sigmaFactor = 1
 tau         = 1
-delta       = 0.05		
+delta       = 0.1
+lambd       = 5
 n           = 100
 std         = 0.4
 
 np.set_printoptions(threshold=np.nan)
-
+res_path = 'sfs/sf-alldatasets-n100/'
 
 # -------PROFILING SCRIPTS---------#
-
 def do_cprofile(func):
     def profiled_func(*args, **kwargs):
         profile = cProfile.Profile()
@@ -41,7 +40,6 @@ def do_cprofile(func):
         finally:
             profile.print_stats()
     return profiled_func
-
 
 #------STRUCTURE FEATURES EXTRACTION--------#
 
@@ -86,14 +84,12 @@ def gaussianBlur(x):
 		size = min(lver,min(x.shape[0],x.shape[1])-1);
 		w = gausWin(size)
 		y = np.zeros((x.shape))
-		# print "Gaussian window length: "+str(size)
 		for i, row in enumerate(x):
 			y[i] = np.convolve(row,w,mode='same')
 	y = y.T.copy()
 	if lhor>=1:
 		size = min(lhor,min(x.shape[0],x.shape[1])-1);
 		w = gausWin(size)
-		# print "Gaussian window shape: " +str(w.shape)
 		for i, col in enumerate(y):
 			y[i] = np.convolve(col,w,mode='same')
 	y = y.T.copy()
@@ -124,7 +120,7 @@ def shiftRows(x):
 		y[i-1] = x
 	return y
 
-def convertToMatrix(x,n): # This copies the info of the left of the diagonal into the right.
+def convertToMatrix(x,n=n): # This copies the info on the left of the diagonal into the right side.
 	y = unpackZeros(x,n)
 	y2 = np.vstack((y[1:],np.zeros(n)))
 	y2 = shiftRows(y2)
@@ -138,33 +134,57 @@ def downsample(x):
 	return d.T
 
 def novelty(x):
+	x=x.T
 	c=[]
 	for i in np.arange(len(x))-1:
-		# print x[i]
-		c.append(np.sqrt(sum(x[i]-x[i+1])**2))
-	c=(c-min(c))/max(c)
+		c.append(np.sqrt(sum((x[i]-x[i+1])**2)))
+	# print "I still need to try to fix a way to get rid of spikes at the start and end"
+	c=c[1:]
+	minc=min(c)
+	c-=minc
+	maxc=max(c)
+	c=c/maxc
 	return c
+
+def peakdet(x, section_length=lambd, threshold=delta):
+	isMax = False
+	peak_locations = []
+	for i in np.arange(len(x)):
+		if x[i]>=threshold:
+			isMax = True
+		for j in np.arange(1,section_length):
+			if (i-j)>=0:
+				if x[i-j]>x[i]:
+					isMax = False
+			if (i+j)<len(x):
+				if x[i+j]>x[i]:
+					isMax = False
+		if isMax:
+			peak_locations.append(i)
+			i += section_length-1
+	return peak_locations
+
+def local_maxima(section):
+    all_maxima = (section >= np.roll(section,  1, 0)) & (section >= np.roll(section, -1, 0)) & (section >= delta)
+    return np.where(all_maxima)
 
 def extractSF(hpcps):
 	y  = delayCoord(hpcps, m, tau)
 	R  = ssm(y)
 	L  = circShift(R)
-	sf  = gaussianBlur(L)
-	# D  = downsample(P)
-	# sf = storeAsArray(P)
-	# sf = normalize(sf)
+	P  = gaussianBlur(L)
+	D  = downsample(P)
+	sf = storeAsArray(D)
 	return sf	
 
 #-------PLOTTING AND PRINTING-------#
-
 # @do_cprofile
 def printProcess(filename):
-
 	print("file name: " + desc_path + filename)	
 	hpcps = np.loadtxt(desc_path + filename, delimiter=',') # read descriptors
 	plt.imshow(hpcps.T,interpolation='nearest',aspect='auto')
 	plt.figure()
-	y = delayCoord(hpcps) # apply delay coordinates
+	y = delayCoord(hpcps,m,tau) # apply delay coordinates
 	R = ssm(y)
 	plt.imshow(R,cmap = cm.binary,interpolation='nearest')
 	# plt.title(filename)
@@ -173,6 +193,7 @@ def printProcess(filename):
 	plt.subplot(211)
 	plt.imshow(L,cmap = cm.binary,interpolation='nearest',aspect='auto')
 	P = gaussianBlur(L)
+	plt.figure()
 	plt.subplot(212)
 	plt.imshow(P,cmap = cm.binary,interpolation='nearest',aspect='auto')
 	plt.figure()
@@ -189,9 +210,7 @@ def printProcess(filename):
 	plt.title(filename)
 	plt.show()
 
-
 #--------BATCH PROCESSING----------#
-
 def processFiles(filename):
 	flist = open(filename,'r')
 	for i,line in enumerate(flist,start=1):
@@ -217,7 +236,7 @@ def storePickle(filename):
 	pick = open(pickle_fn,'w')
 	for i, line in enumerate(flist,start=1):
 		f = open(res_path+line[:-1],'r')
-		data = np.loadtxt(res_path + line[:-1], delimiter='\n')
+		data = np.loadtxt(res_path + line[:-1])
 		print i
 		pickle.dump(data,pick)
 		f.close()
@@ -232,17 +251,26 @@ def getPickle(pickle_fn,list_fn):
 		data.append(pickle.load(pick))
 	pick.close()
 	return data
-	
+
+def listToData(list_fn):
+	print "extracting data from candidate list"
+	flist = open(list_fn)
+	lines = flist.readlines()
+	data = []
+	for i, line in enumerate(lines):
+		data.append(np.loadtxt(res_path+line[:-4]+'csv'))
+	return data
 
 if __name__ == "__main__":
 
 	desc_path = 'hpcp_ah6_al5_csv/'
-	res_path  = 'sfs/alldatasets-no-downsampling/'
+	res_path  = 'sfs/sf-alldatasets-n100/'
 	desc_list = 'sfs/alldatasets-n100.txt'
-	pickle_fn = 'alldatasets-no-downsampling.pickle'
+	pickle_fn = 'alldatasets-n1000.pickle'
 
-	filename  = 'Beatles_AcrossTheUniverse_Beatles_1970-LetItBe-03.wav.csv'
+	filename  = 'Beatles_AllYouNeedIsLove_Beatles_1967-MagicalMysteryTour-11.wav.csv'
 
-	storeAsCSVMatrix(desc_list)
+	# printProcess(filename)
+	# processFiles(desc_list)
 	storePickle(desc_list)
 	# printProcess(filename)
